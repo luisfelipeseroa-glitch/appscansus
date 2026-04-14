@@ -7,687 +7,569 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ScanSUS">
-<meta name="theme-color" content="#0f0f0f">
+<meta name="theme-color" content="#080c10">
 <title>ScanSUS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ TOKENS */
 :root {
-  --bg: #0f0f0f;
-  --bg2: #1a1a1a;
-  --bg3: #222;
-  --surface: #2a2a2a;
-  --border: #333;
-  --border2: #444;
-  --accent: #00e676;
-  --accent2: #00c853;
-  --warn: #ffab00;
-  --red: #ff5252;
-  --text: #f0f0f0;
-  --muted: #888;
-  --dim: #555;
+  --bg:       #080c10;
+  --bg2:      #0e1318;
+  --bg3:      #141b22;
+  --card:     #1a232c;
+  --card2:    #202c38;
+  --border:   #253040;
+  --border2:  #2e3f52;
+  --accent:   #0af0a0;
+  --accent2:  #00c97a;
+  --accent3:  #00916e;
+  --blue:     #4a9eff;
+  --blue2:    #1a6fe8;
+  --warn:     #f0a30a;
+  --red:      #ff4d4d;
+  --text:     #e8eef5;
+  --muted:    #6b8099;
+  --dim:      #3d5166;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bot: env(safe-area-inset-bottom, 0px);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { height: 100%; background: #000; }
-body {
-  height: 100dvh;
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  overscroll-behavior: none;
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;background:#000}
+body{
+  height:100dvh;font-family:'Sora',sans-serif;
+  background:var(--bg);color:var(--text);
+  overflow:hidden;display:flex;flex-direction:column;
+  overscroll-behavior:none;
 }
 
-/* ━━ SCREEN ROUTER ━━ */
-.screen { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-.screen.active { display: flex; }
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ SCREENS */
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden}
+.screen.active{display:flex}
 
-/* ━━ WELCOME SCREEN ━━ */
-#sWelcome {
-  background: #0f0f0f;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  gap: 0;
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ WELCOME */
+#sWelcome{
+  background:var(--bg);
+  align-items:center;justify-content:center;
+  padding:28px 24px;position:relative;overflow:hidden;
 }
-.wc-glow {
-  position: absolute;
-  width: 300px; height: 300px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,230,118,.12) 0%, transparent 70%);
-  top: 10%; left: 50%; transform: translateX(-50%);
-  pointer-events: none;
+.wc-bg{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% -10%, rgba(10,240,160,.07) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 80% 110%, rgba(74,158,255,.06) 0%, transparent 60%);
 }
-.wc-inner {
-  width: 100%; max-width: 400px;
-  display: flex; flex-direction: column;
-  align-items: center; gap: 32px;
-  animation: fadeUp .5s ease-out;
+.wc-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size:40px 40px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 0%, black 30%, transparent 80%);
 }
-@keyframes fadeUp { from { opacity:0; transform:translateY(24px) } to { opacity:1; transform:translateY(0) } }
+.wc-inner{
+  width:100%;max-width:420px;
+  display:flex;flex-direction:column;
+  align-items:center;gap:28px;position:relative;z-index:1;
+  animation:fadeUp .55s cubic-bezier(.16,1,.3,1);
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 
-.wc-logo {
-  display: flex; align-items: center; gap: 14px;
+.wc-logo{display:flex;align-items:center;gap:14px}
+.wc-icon{
+  width:58px;height:58px;border-radius:18px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  box-shadow:0 0 0 1px rgba(10,240,160,.2), 0 8px 32px rgba(10,240,160,.25), 0 2px 8px rgba(0,0,0,.5);
 }
-.wc-icon {
-  width: 56px; height: 56px; border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px;
-  box-shadow: 0 0 40px rgba(0,230,118,.3), 0 8px 24px rgba(0,0,0,.4);
-}
-.wc-title { font-size: 2rem; font-weight: 700; letter-spacing: -1px; }
-.wc-title b { color: var(--accent); }
-.wc-sub {
-  font-size: .82rem; color: var(--muted);
-  text-align: center; line-height: 1.7;
-  padding: 0 8px;
-}
-.https-warn {
-  width: 100%;
-  background: rgba(255,171,0,.08);
-  border: 1px solid rgba(255,171,0,.25);
-  border-radius: 12px;
-  padding: 14px 16px;
-  font-size: .78rem;
-  color: #ffab00;
-  line-height: 1.7;
-  display: none;
-}
-.https-warn strong { display: block; margin-bottom: 4px; font-size: .85rem; }
-.btn-start {
-  width: 100%;
-  padding: 16px;
-  border-radius: 14px;
-  border: none;
-  background: var(--accent);
-  color: #000;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  box-shadow: 0 4px 20px rgba(0,230,118,.3);
-  transition: transform .15s, box-shadow .15s;
-  touch-action: manipulation;
-}
-.btn-start:active { transform: scale(.97); box-shadow: 0 2px 10px rgba(0,230,118,.2); }
+.wc-wordmark{display:flex;flex-direction:column}
+.wc-name{font-size:2rem;font-weight:800;letter-spacing:-1.5px;line-height:1}
+.wc-name em{color:var(--accent);font-style:normal}
+.wc-tagline{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:.12em;margin-top:3px}
 
-/* ━━ CAMERA SCREEN ━━ */
-#sCamera {
-  background: #000;
-  position: relative;
+/* Drive status card */
+.drive-card{
+  width:100%;background:var(--card);
+  border:1.5px solid var(--border2);border-radius:16px;
+  padding:16px 18px;display:flex;align-items:center;gap:14px;
+  transition:border-color .3s;
 }
+.drive-card.connected{border-color:rgba(10,240,160,.3)}
+.drive-card.connected .drive-card-icon{background:rgba(10,240,160,.12);color:var(--accent)}
+.drive-card-icon{
+  width:42px;height:42px;border-radius:12px;
+  background:var(--card2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;flex-shrink:0;transition:all .3s;
+}
+.drive-card-info{flex:1;min-width:0}
+.drive-card-label{font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.05em}
+.drive-card-value{font-size:.88rem;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drive-card-value.dim{color:var(--muted)}
+.drive-card-action{
+  padding:7px 14px;border-radius:10px;border:none;cursor:pointer;
+  font-family:'Sora',sans-serif;font-size:.75rem;font-weight:600;
+  touch-action:manipulation;transition:all .2s;white-space:nowrap;
+}
+.drive-card-action.login{background:var(--blue2);color:#fff}
+.drive-card-action.login:hover{background:var(--blue)}
+.drive-card-action.logout{background:var(--card2);color:var(--muted);border:1px solid var(--border2)}
+.drive-card-action:active{transform:scale(.95)}
 
-/* Video fill */
-#video {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
+/* HTTPS warning */
+.https-warn{
+  width:100%;background:rgba(240,163,10,.07);
+  border:1px solid rgba(240,163,10,.25);border-radius:12px;
+  padding:13px 15px;font-size:.75rem;color:var(--warn);line-height:1.7;
 }
-#overlayCanvas {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-}
-#captureCanvas { display: none; }
+.https-warn strong{display:block;margin-bottom:3px;font-size:.8rem}
 
-/* Camera blocked overlay */
-#camBlocked {
-  position: absolute; inset: 0;
-  background: #000;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 16px; padding: 32px; text-align: center;
-  z-index: 10;
+/* Start button */
+.btn-start{
+  width:100%;padding:16px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#041a10;font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 24px rgba(10,240,160,.25);
+  transition:transform .15s,box-shadow .15s;touch-action:manipulation;
 }
-.blocked-icon { font-size: 3.5rem; }
-.blocked-title { font-size: 1.2rem; font-weight: 700; }
-.blocked-msg { font-size: .82rem; color: var(--muted); line-height: 1.7; max-width: 280px; }
-.blocked-tips {
-  background: rgba(255,255,255,.05);
-  border: 1px solid var(--border2);
-  border-radius: 12px;
-  padding: 14px 16px;
-  font-size: .78rem;
-  color: var(--muted);
-  line-height: 1.8;
-  text-align: left;
-  width: 100%; max-width: 320px;
+.btn-start:active{transform:scale(.97);box-shadow:0 2px 12px rgba(10,240,160,.15)}
+
+.wc-footer{font-size:.65rem;color:var(--dim);font-family:'JetBrains Mono',monospace;text-align:center;line-height:1.8}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ CAMERA */
+#sCamera{background:#000;position:relative}
+
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+#overlayCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#captureCanvas{display:none}
+
+/* Camera blocked */
+#camBlocked{
+  position:absolute;inset:0;background:rgba(8,12,16,.97);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:32px;text-align:center;z-index:20;
 }
-.blocked-tips b { color: var(--text); display: block; margin-bottom: 4px; }
+.blocked-icon{font-size:3rem}
+.blocked-title{font-size:1.1rem;font-weight:700}
+.blocked-msg{font-size:.8rem;color:var(--muted);line-height:1.7;max-width:300px}
+.blocked-box{
+  background:var(--card);border:1px solid var(--border2);border-radius:12px;
+  padding:14px 16px;font-size:.76rem;color:var(--muted);line-height:1.8;
+  text-align:left;width:100%;max-width:340px;
+}
+.blocked-box b{color:var(--text);display:block;margin-bottom:4px}
 
 /* Top bar */
-.cam-topbar {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  z-index: 20;
-  padding: 12px 16px;
-  padding-top: calc(12px + var(--safe-top));
-  display: flex; align-items: center; gap: 12px;
-  background: linear-gradient(to bottom, rgba(0,0,0,.7) 0%, transparent 100%);
+.cam-topbar{
+  position:absolute;top:0;left:0;right:0;z-index:20;
+  padding:12px 16px;padding-top:calc(12px + var(--safe-top));
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(to bottom,rgba(0,0,0,.75) 0%,transparent 100%);
 }
-.cam-back {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: rgba(0,0,0,.5);
-  border: 1px solid rgba(255,255,255,.1);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem; cursor: pointer;
-  touch-action: manipulation;
-  flex-shrink: 0;
+.cam-back{
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;cursor:pointer;touch-action:manipulation;flex-shrink:0;
+  backdrop-filter:blur(8px);
 }
-.cam-info { flex: 1; }
-.cam-status {
-  font-size: .72rem;
-  color: rgba(255,255,255,.7);
-  display: flex; align-items: center; gap: 6px;
-}
-.cam-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--muted); flex-shrink: 0;
-}
-.cam-dot.on { background: var(--accent); animation: blink 1.5s infinite; }
-.cam-dot.warn { background: var(--warn); }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.cam-status-row{flex:1;display:flex;align-items:center;gap:6px}
+.cam-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.cam-dot.on{background:var(--accent);animation:blink 1.5s infinite}
+.cam-dot.warn{background:var(--warn)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#camStatusTxt{font-size:.7rem;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace}
 
-.page-counter {
-  background: rgba(0,0,0,.6);
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 20px;
-  padding: 5px 12px;
-  font-size: .75rem;
-  font-family: 'DM Mono', monospace;
-  color: #fff;
-  flex-shrink: 0;
+.page-counter{
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;padding:5px 12px;
+  font-size:.72rem;font-family:'JetBrains Mono',monospace;
+  color:#fff;flex-shrink:0;backdrop-filter:blur(8px);
 }
 
-/* Mode toggle - top right pill */
-.mode-row {
-  position: absolute;
-  top: 0; right: 0;
-  z-index: 20;
-  padding: 12px 16px;
-  padding-top: calc(12px + var(--safe-top));
-  display: flex; gap: 8px; align-items: center;
+/* Mode pills - top right */
+.cam-pills{
+  position:absolute;top:0;right:0;z-index:20;
+  padding:12px 16px;padding-top:calc(12px + var(--safe-top));
+  display:flex;gap:6px;align-items:center;
 }
-.pill-btn {
-  background: rgba(0,0,0,.55);
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: .7rem;
-  font-family: 'DM Mono', monospace;
-  font-weight: 500;
-  color: rgba(255,255,255,.7);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: all .2s;
-  backdrop-filter: blur(8px);
+.pill{
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;padding:6px 12px;
+  font-size:.67rem;font-family:'JetBrains Mono',monospace;font-weight:500;
+  color:rgba(255,255,255,.6);cursor:pointer;touch-action:manipulation;
+  transition:all .2s;backdrop-filter:blur(8px);
 }
-.pill-btn.active { background: rgba(0,230,118,.2); border-color: var(--accent); color: var(--accent); }
-.pill-btn:active { transform: scale(.95); }
+.pill.active{background:rgba(10,240,160,.18);border-color:rgba(10,240,160,.5);color:var(--accent)}
+.pill:active{transform:scale(.94)}
+
+/* Auto progress */
+.auto-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);z-index:15}
+.auto-fill{height:100%;background:var(--accent);width:0%;transition:width .12s linear;box-shadow:0 0 10px var(--accent)}
+
+/* Flash */
+#flashOverlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40;transition:opacity .07s}
 
 /* Bottom controls */
-.cam-bottom {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  z-index: 20;
-  padding: 20px 24px;
-  padding-bottom: calc(20px + var(--safe-bot));
-  background: linear-gradient(to top, rgba(0,0,0,.8) 0%, transparent 100%);
-  display: flex; align-items: center; justify-content: space-between;
+.cam-bottom{
+  position:absolute;bottom:0;left:0;right:0;z-index:20;
+  padding:20px 28px;padding-bottom:calc(20px + var(--safe-bot));
+  background:linear-gradient(to top,rgba(0,0,0,.82) 0%,transparent 100%);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.cam-side-btn{
+  width:50px;height:50px;border-radius:50%;
+  background:rgba(0,0,0,.5);border:1.5px solid rgba(255,255,255,.18);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;cursor:pointer;touch-action:manipulation;
+  transition:transform .15s;backdrop-filter:blur(8px);
+}
+.cam-side-btn:active{transform:scale(.88)}
+
+/* Shutter */
+.shutter-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
+.shutter-outer{
+  width:82px;height:82px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;touch-action:manipulation;transition:border-color .3s;
+}
+.shutter-outer.armed{border-color:rgba(10,240,160,.6)}
+.shutter-inner{
+  width:66px;height:66px;border-radius:50%;
+  background:#fff;transition:background .3s,transform .1s;
+}
+.shutter-outer.armed .shutter-inner{background:var(--accent)}
+.shutter-outer:active .shutter-inner{transform:scale(.88)}
+.shutter-label{font-size:.62rem;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,.5);letter-spacing:.08em}
+
+/* Gallery btn */
+.gallery-btn{
+  width:50px;height:50px;border-radius:12px;overflow:hidden;
+  border:2px solid rgba(255,255,255,.18);cursor:pointer;
+  position:relative;touch-action:manipulation;background:var(--bg3);flex-shrink:0;
+}
+.gallery-btn img{width:100%;height:100%;object-fit:cover}
+.gallery-count{
+  position:absolute;bottom:0;right:0;
+  background:var(--accent);color:#041a10;
+  font-size:.58rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+  padding:2px 5px;border-top-left-radius:7px;
+}
+.gallery-empty{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;color:var(--dim);
 }
 
-/* Switch camera button */
-.cam-side-btn {
-  width: 48px; height: 48px; border-radius: 50%;
-  background: rgba(0,0,0,.5);
-  border: 1.5px solid rgba(255,255,255,.2);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem; cursor: pointer;
-  touch-action: manipulation;
-  transition: transform .15s;
-}
-.cam-side-btn:active { transform: scale(.9); }
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PAGES */
+#sPages{background:var(--bg)}
 
-/* SHUTTER BUTTON */
-.shutter-wrap {
-  display: flex; flex-direction: column;
-  align-items: center; gap: 8px;
+.pages-header{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:14px 16px;padding-top:calc(14px + var(--safe-top));
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
 }
-.shutter-btn {
-  width: 76px; height: 76px; border-radius: 50%;
-  background: #fff;
-  border: 5px solid rgba(255,255,255,.3);
-  cursor: pointer;
-  position: relative;
-  touch-action: manipulation;
-  transition: transform .1s;
-  outline: none;
-  display: flex; align-items: center; justify-content: center;
+.pages-header h2{flex:1;font-size:.95rem;font-weight:700}
+.icon-btn{
+  width:36px;height:36px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text);display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;cursor:pointer;touch-action:manipulation;transition:background .15s;
 }
-.shutter-btn::after {
-  content: '';
-  width: 62px; height: 62px; border-radius: 50%;
-  background: #fff;
-  border: 2px solid rgba(0,0,0,.1);
-  position: absolute;
-}
-.shutter-btn.armed { background: var(--accent); border-color: rgba(0,230,118,.4); }
-.shutter-btn.armed::after { background: var(--accent); }
-.shutter-btn:active { transform: scale(.9); }
-.shutter-label {
-  font-size: .65rem;
-  font-family: 'DM Mono', monospace;
-  color: rgba(255,255,255,.6);
-  text-transform: uppercase;
-  letter-spacing: .05em;
-}
+.icon-btn:active{background:var(--border2)}
 
-/* Gallery side button */
-.gallery-btn {
-  width: 48px; height: 48px; border-radius: 12px;
-  overflow: hidden;
-  border: 2px solid rgba(255,255,255,.2);
-  cursor: pointer;
-  position: relative;
-  touch-action: manipulation;
-  background: var(--bg3);
-  flex-shrink: 0;
+/* Document metadata form */
+.doc-meta-bar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:12px 14px;display:flex;gap:8px;flex-shrink:0;
 }
-.gallery-btn img {
-  width: 100%; height: 100%; object-fit: cover;
+.meta-field{flex:1;display:flex;flex-direction:column;gap:4px}
+.meta-label{font-size:.6rem;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.meta-select,.meta-input{
+  background:var(--card);border:1.5px solid var(--border);border-radius:10px;
+  padding:9px 11px;color:var(--text);font-family:'Sora',sans-serif;font-size:.8rem;
+  outline:none;transition:border-color .2s;width:100%;
+  -webkit-appearance:none;appearance:none;
 }
-.gallery-count {
-  position: absolute; bottom: 0; right: 0;
-  background: var(--accent);
-  color: #000;
-  font-size: .6rem;
-  font-weight: 700;
-  font-family: 'DM Mono', monospace;
-  padding: 2px 5px;
-  border-top-left-radius: 6px;
-}
-.gallery-empty {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.2rem; color: var(--dim);
-}
+.meta-select{cursor:pointer}
+.meta-select:focus,.meta-input:focus{border-color:var(--accent)}
+.meta-input::placeholder{color:var(--dim)}
 
-/* Stability arc */
-.stability-ring {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 86px; height: 86px;
-  border-radius: 50%;
-  pointer-events: none;
+/* Pages grid */
+.pages-scroll{
+  flex:1;overflow-y:auto;padding:12px;
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;
 }
+.pages-scroll::-webkit-scrollbar{width:0}
 
-/* Flash overlay */
-#flashOverlay {
-  position: absolute; inset: 0;
-  background: #fff;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 40;
-  transition: opacity .08s;
+.page-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:13px;overflow:hidden;position:relative;
+  animation:popIn .22s cubic-bezier(.16,1,.3,1);
 }
+@keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.page-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;cursor:pointer}
+.page-num{
+  position:absolute;top:7px;left:7px;
+  background:rgba(0,0,0,.72);color:var(--accent);
+  font-family:'JetBrains Mono',monospace;font-size:.58rem;
+  padding:2px 7px;border-radius:10px;
+}
+.page-del{
+  position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.72);border:1px solid rgba(255,77,77,.3);color:var(--red);
+  display:flex;align-items:center;justify-content:center;font-size:.65rem;
+  cursor:pointer;touch-action:manipulation;
+}
+.bw-tag{
+  position:absolute;bottom:34px;left:7px;
+  background:rgba(0,0,0,.72);color:rgba(255,255,255,.6);
+  font-family:'JetBrains Mono',monospace;font-size:.54rem;
+  padding:1px 6px;border-radius:7px;
+}
+.page-label{
+  width:100%;background:transparent;border:none;border-top:1px solid var(--border);
+  color:var(--text);font-family:'Sora',sans-serif;font-size:.7rem;
+  padding:7px 9px;outline:none;
+}
+.page-label::placeholder{color:var(--dim)}
 
-/* Auto capture indicator */
-.auto-bar {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 3px;
-  background: rgba(255,255,255,.1);
-  z-index: 15;
+.pages-empty{
+  grid-column:1/-1;padding:60px 20px;text-align:center;
+  color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:12px;
 }
-.auto-fill {
-  height: 100%;
-  background: var(--accent);
-  width: 0%;
-  transition: width .1s linear;
-  box-shadow: 0 0 8px var(--accent);
-}
-
-/* ━━ PAGES SCREEN ━━ */
-#sPages {
-  background: var(--bg);
-}
-.pages-header {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 16px;
-  padding-top: calc(14px + var(--safe-top));
-  display: flex; align-items: center; gap: 12px;
-  flex-shrink: 0;
-}
-.pages-header h2 { flex: 1; font-size: 1rem; font-weight: 600; }
-.icon-btn {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
-  display: flex; align-items: center; justify-content: center;
-  font-size: .9rem; cursor: pointer;
-  touch-action: manipulation;
-  transition: background .15s;
-}
-.icon-btn:active { background: var(--border2); }
-
-.pages-scroll {
-  flex: 1; overflow-y: auto;
-  padding: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  align-content: start;
-}
-.pages-scroll::-webkit-scrollbar { width: 0; }
-
-.page-thumb-card {
-  background: var(--bg2);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  animation: popIn .25s ease-out;
-}
-@keyframes popIn { from { opacity:0; transform:scale(.92) } to { opacity:1; transform:scale(1) } }
-.page-thumb-card img {
-  width: 100%; aspect-ratio: 3/4;
-  object-fit: cover; display: block;
-  cursor: pointer;
-}
-.page-thumb-card .page-num {
-  position: absolute; top: 7px; left: 7px;
-  background: rgba(0,0,0,.7);
-  color: var(--accent);
-  font-family: 'DM Mono', monospace;
-  font-size: .6rem;
-  padding: 2px 7px; border-radius: 10px;
-}
-.page-del-btn {
-  position: absolute; top: 6px; right: 6px;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: rgba(0,0,0,.7);
-  border: 1px solid rgba(255,82,82,.3);
-  color: var(--red);
-  display: flex; align-items: center; justify-content: center;
-  font-size: .7rem; cursor: pointer;
-  touch-action: manipulation;
-}
-.page-label-inp {
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-top: 1px solid var(--border);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: .72rem;
-  padding: 7px 10px;
-  outline: none;
-}
-.page-label-inp::placeholder { color: var(--dim); }
-
-.pages-empty {
-  grid-column: 1/-1;
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--muted);
-  display: flex; flex-direction: column;
-  align-items: center; gap: 12px;
-}
-.pages-empty-icon { font-size: 2.5rem; opacity: .4; }
+.pages-empty-icon{font-size:2.5rem;opacity:.35}
 
 /* Pages footer */
-.pages-footer {
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  padding: 14px 16px;
-  padding-bottom: calc(14px + var(--safe-bot));
-  display: flex; flex-direction: column; gap: 10px;
-  flex-shrink: 0;
-}
-.fname-row {
-  display: flex; gap: 8px; align-items: center;
-}
-.fname-inp {
-  flex: 1;
-  background: var(--bg3);
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: .83rem;
-  outline: none;
-  transition: border-color .2s;
-}
-.fname-inp:focus { border-color: var(--accent); }
-.btn-pdf {
-  padding: 12px 20px;
-  border-radius: 12px;
-  border: none;
-  background: var(--accent);
-  color: #000;
-  font-family: 'DM Sans', sans-serif;
-  font-size: .9rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  touch-action: manipulation;
-  transition: transform .15s;
-}
-.btn-pdf:disabled { background: var(--surface); color: var(--dim); cursor: not-allowed; }
-.btn-pdf:not(:disabled):active { transform: scale(.97); }
-.btn-clear {
-  background: transparent;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: .83rem;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.btn-clear:active { background: rgba(255,82,82,.08); color: var(--red); border-color: rgba(255,82,82,.3); }
-.btn-row { display: flex; gap: 8px; }
-
-/* ━━ PREVIEW FULLSCREEN ━━ */
-#sPreview {
-  background: #000;
-  position: relative;
-}
-#previewImg {
-  width: 100%; height: 100%;
-  object-fit: contain;
-}
-.preview-close {
-  position: absolute;
-  top: 16px; right: 16px;
-  top: calc(16px + var(--safe-top));
-  width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(0,0,0,.6);
-  border: 1px solid rgba(255,255,255,.2);
-  color: #fff; font-size: 1.2rem;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; z-index: 10;
-  touch-action: manipulation;
+.pages-footer{
+  background:var(--bg2);border-top:1px solid var(--border);
+  padding:14px 16px;padding-bottom:calc(14px + var(--safe-bot));
+  display:flex;flex-direction:column;gap:10px;flex-shrink:0;
 }
 
-/* ━━ PROGRESS OVERLAY ━━ */
-#progOverlay {
-  display: none;
-  position: fixed; inset: 0; z-index: 100;
-  background: rgba(0,0,0,.85);
-  backdrop-filter: blur(8px);
-  align-items: center; justify-content: center;
-  flex-direction: column; gap: 16px;
+/* Drive upload summary */
+.upload-summary{
+  background:var(--card);border:1.5px solid var(--border2);
+  border-radius:12px;padding:11px 14px;
+  display:flex;align-items:center;gap:10px;
 }
-#progOverlay.show { display: flex; }
-.prog-ring-wrap { position: relative; width: 80px; height: 80px; }
-.prog-ring-svg { transform: rotate(-90deg); }
-.prog-ring-bg { stroke: var(--surface); fill: none; }
-.prog-ring-fill { fill: none; stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .3s; }
-.prog-pct {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Mono', monospace; font-size: .9rem; color: var(--accent);
+.upload-summary-icon{font-size:1.2rem;flex-shrink:0}
+.upload-summary-info{flex:1;min-width:0}
+.upload-path{
+  font-size:.72rem;font-family:'JetBrains Mono',monospace;
+  color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.prog-lbl { font-size: .8rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+.upload-path.dim{color:var(--muted)}
+.upload-drive-status{font-size:.67rem;color:var(--muted);margin-top:2px}
 
-/* ━━ TOAST ━━ */
-#toast {
-  position: fixed;
-  bottom: calc(20px + var(--safe-bot));
-  left: 50%; transform: translateX(-50%) translateY(80px);
-  background: var(--text);
-  color: #000;
-  padding: 10px 20px;
-  border-radius: 24px;
-  font-size: .83rem;
-  font-weight: 600;
-  white-space: nowrap;
-  z-index: 200;
-  transition: transform .3s cubic-bezier(.175,.885,.32,1.275), opacity .3s;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+.btn-export{
+  width:100%;padding:14px;border-radius:13px;border:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#041a10;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 20px rgba(10,240,160,.2);touch-action:manipulation;
+  transition:transform .15s,box-shadow .15s;
 }
-#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-#toast.err { background: var(--red); color: #fff; }
+.btn-export:disabled{background:var(--card2);color:var(--dim);box-shadow:none;cursor:not-allowed}
+.btn-export:not(:disabled):active{transform:scale(.97);box-shadow:0 2px 10px rgba(10,240,160,.1)}
 
-/* BW badge */
-.bw-badge {
-  position: absolute; bottom: 7px; left: 7px;
-  background: rgba(0,0,0,.7);
-  color: rgba(255,255,255,.7);
-  font-family: 'DM Mono', monospace;
-  font-size: .55rem;
-  padding: 1px 6px; border-radius: 8px;
-  display: none;
+.btn-secondary{
+  flex:1;padding:12px;border-radius:12px;
+  background:transparent;border:1.5px solid var(--border2);
+  color:var(--muted);font-family:'Sora',sans-serif;font-size:.8rem;
+  cursor:pointer;touch-action:manipulation;transition:all .2s;
+}
+.btn-secondary:active{background:rgba(255,77,77,.08);color:var(--red);border-color:rgba(255,77,77,.3)}
+.btn-row{display:flex;gap:8px}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PREVIEW */
+#sPreview{background:#000;position:relative}
+#previewImg{width:100%;height:100%;object-fit:contain}
+.preview-close{
+  position:absolute;top:calc(16px + var(--safe-top));right:16px;
+  width:44px;height:44px;border-radius:50%;
+  background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.18);
+  color:#fff;font-size:1.2rem;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:10;touch-action:manipulation;backdrop-filter:blur(8px);
 }
 
-/* Swipe hint */
-.swipe-hint {
-  font-size: .65rem;
-  color: rgba(255,255,255,.35);
-  text-align: center;
-  position: absolute;
-  bottom: 130px;
-  left: 0; right: 0;
-  z-index: 15;
-  font-family: 'DM Mono', monospace;
-  letter-spacing: .05em;
-  animation: pulse 2s ease-in-out 2s forwards;
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ UPLOAD STATUS SHEET */
+#uploadSheet{
+  display:none;position:fixed;inset:0;z-index:90;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(10px);
+  align-items:flex-end;justify-content:center;
+  padding:0 0 var(--safe-bot);
 }
-@keyframes pulse { 0%{opacity:.6} 50%{opacity:.2} 100%{opacity:0;display:none} }
+#uploadSheet.show{display:flex}
+.upload-panel{
+  width:100%;max-width:500px;
+  background:var(--bg2);border-radius:24px 24px 0 0;
+  border-top:1px solid var(--border2);
+  padding:20px 24px 32px;
+  animation:slideUp .35s cubic-bezier(.16,1,.3,1);
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.upload-panel-handle{
+  width:40px;height:4px;border-radius:2px;
+  background:var(--border2);margin:0 auto 20px;
+}
+.upload-panel-title{font-size:1rem;font-weight:700;margin-bottom:4px}
+.upload-panel-sub{font-size:.76rem;color:var(--muted);margin-bottom:20px}
+
+.upload-step{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--border);
+}
+.upload-step:last-child{border-bottom:none}
+.step-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:var(--card);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+}
+.step-icon.done{background:rgba(10,240,160,.12)}
+.step-icon.active{background:rgba(74,158,255,.12);animation:pulse .8s ease-in-out infinite alternate}
+.step-icon.err{background:rgba(255,77,77,.1)}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(74,158,255,.3)}to{box-shadow:0 0 0 8px rgba(74,158,255,0)}}
+.step-info{flex:1}
+.step-label{font-size:.83rem;font-weight:600}
+.step-detail{font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.step-check{font-size:1rem;flex-shrink:0}
+
+.upload-done-btn{
+  width:100%;margin-top:20px;padding:14px;border-radius:13px;border:none;
+  background:var(--accent);color:#041a10;
+  font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;
+  cursor:pointer;touch-action:manipulation;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PROGRESS */
+#progOverlay{
+  display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
+  align-items:center;justify-content:center;flex-direction:column;gap:16px;
+}
+#progOverlay.show{display:flex}
+.prog-wrap{position:relative;width:80px;height:80px}
+.prog-svg{transform:rotate(-90deg)}
+.prog-bg{stroke:var(--card2);fill:none}
+.prog-fill{fill:none;stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .3s}
+.prog-pct{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--accent);
+}
+.prog-lbl{font-size:.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ TOAST */
+#toast{
+  position:fixed;bottom:calc(18px + var(--safe-bot));
+  left:50%;transform:translateX(-50%) translateY(70px);
+  background:var(--text);color:#080c10;
+  padding:10px 20px;border-radius:24px;font-size:.82rem;font-weight:600;
+  white-space:nowrap;z-index:200;pointer-events:none;
+  transition:transform .3s cubic-bezier(.175,.885,.32,1.275),opacity .3s;
+  opacity:0;box-shadow:0 6px 24px rgba(0,0,0,.5);
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.err{background:var(--red);color:#fff}
+#toast.ok{background:var(--accent);color:#041a10}
 </style>
 </head>
 <body>
 
-<!-- ══════════ WELCOME ══════════ -->
+<!-- ══════════════════════════════ WELCOME -->
 <div class="screen active" id="sWelcome">
-  <div class="wc-glow"></div>
+  <div class="wc-bg"></div>
+  <div class="wc-grid"></div>
   <div class="wc-inner">
+
     <div class="wc-logo">
       <div class="wc-icon">📋</div>
-      <div class="wc-title">Scan<b>SUS</b></div>
+      <div class="wc-wordmark">
+        <div class="wc-name">Scan<em>SUS</em></div>
+        <div class="wc-tagline">DIGITALIZADOR DE DOCUMENTOS</div>
+      </div>
     </div>
 
-    <div class="wc-sub">
-      Digitalize documentos rapidamente com a câmera do celular.<br>
-      Gere PDFs organizados por paciente.
+    <div class="drive-card" id="driveCard">
+      <div class="drive-card-icon" id="driveCardIcon">☁️</div>
+      <div class="drive-card-info">
+        <div class="drive-card-label">GOOGLE DRIVE</div>
+        <div class="drive-card-value dim" id="driveCardValue">Não conectado</div>
+      </div>
+      <button class="drive-card-action login" id="driveCardBtn" onclick="driveLogin()">
+        Conectar
+      </button>
     </div>
 
-    <div class="https-warn" id="httpsWarn">
-      <strong>⚠️ Câmera bloqueada no modo local</strong>
-      A câmera só funciona via <strong>HTTPS</strong> ou <strong>localhost</strong>.<br>
-      Use o servidor <code>servidor.py</code> incluído e acesse pelo link exibido no terminal.<br>
-      No celular: acesse <code>https://SEU-IP:4443/scanner-sus-v4.html</code> e aceite o certificado.
+    <div class="https-warn" id="httpsWarn" style="display:none">
+      <strong>⚠️ Câmera indisponível neste contexto</strong>
+      Abra via <strong>HTTPS</strong> usando o <code>servidor.py</code> incluído.<br>
+      No celular: acesse <code>https://SEU-IP:4443/scanner-sus-v5.html</code>
     </div>
 
     <button class="btn-start" onclick="startApp()">
       📷 &nbsp;Abrir Scanner
     </button>
 
-    <div style="font-size:.7rem;color:var(--dim);font-family:'DM Mono',monospace;text-align:center">
-      Funciona offline · sem conta · sem internet
+    <div class="wc-footer">
+      Funciona offline · PDFs direto no Google Drive<br>
+      Nenhum dado enviado para servidores externos
     </div>
+
   </div>
 </div>
 
-<!-- ══════════ CAMERA ══════════ -->
+<!-- ══════════════════════════════ CAMERA -->
 <div class="screen" id="sCamera">
   <video id="video" autoplay playsinline muted></video>
   <canvas id="overlayCanvas"></canvas>
   <canvas id="captureCanvas"></canvas>
   <div id="flashOverlay"></div>
 
-  <!-- Blocked -->
-  <div id="camBlocked">
+  <div id="camBlocked" style="display:none">
     <div class="blocked-icon">📵</div>
     <div class="blocked-title" id="blockedTitle">Câmera bloqueada</div>
     <div class="blocked-msg" id="blockedMsg">O navegador não conseguiu acessar a câmera.</div>
-    <div class="blocked-tips" id="blockedTips">
+    <div class="blocked-box" id="blockedBox">
       <b>Como resolver:</b>
       Verifique as permissões no navegador.<br>
-      Se estiver no celular via IP local, o acesso precisa ser HTTPS.<br>
-      Aceite o certificado no servidor e recarregue.
+      Se estiver no celular via IP, o acesso precisa ser HTTPS.<br>
+      Aceite o certificado e recarregue a página.
     </div>
-    <button class="btn-start" style="max-width:280px;margin-top:8px" onclick="retryCamera()">
+    <button class="btn-start" style="max-width:260px;margin-top:8px" onclick="retryCamera()">
       🔄 &nbsp;Tentar novamente
     </button>
   </div>
 
-  <!-- Top bar -->
   <div class="cam-topbar">
     <div class="cam-back" onclick="goBack()">←</div>
-    <div class="cam-info">
-      <div class="cam-status">
-        <div class="cam-dot" id="camDot"></div>
-        <span id="camStatusTxt" style="font-size:.7rem;color:rgba(255,255,255,.65)">Iniciando...</span>
-      </div>
+    <div class="cam-status-row">
+      <div class="cam-dot" id="camDot"></div>
+      <span id="camStatusTxt">Iniciando...</span>
     </div>
     <div class="page-counter" id="pageCounter">0 pág.</div>
   </div>
 
-  <!-- Mode pills -->
-  <div class="mode-row">
-    <div class="pill-btn active" id="pillAuto" onclick="setCapMode('auto')">AUTO</div>
-    <div class="pill-btn" id="pillManual" onclick="setCapMode('manual')">MANUAL</div>
-    <div class="pill-btn" id="pillBW" onclick="toggleBW()">P&B</div>
+  <div class="cam-pills">
+    <div class="pill active" id="pillAuto" onclick="setCapMode('auto')">AUTO</div>
+    <div class="pill" id="pillManual" onclick="setCapMode('manual')">MANUAL</div>
+    <div class="pill" id="pillBW" onclick="toggleBW()">P&B</div>
   </div>
 
-  <!-- Swipe hint -->
-  <div class="swipe-hint" id="swipeHint">↕ deslize para ver capturas</div>
-
-  <!-- Auto progress bar -->
   <div class="auto-bar" id="autoBar">
     <div class="auto-fill" id="autoFill"></div>
   </div>
 
-  <!-- Bottom controls -->
   <div class="cam-bottom">
-    <div class="cam-side-btn" onclick="switchCamera()" id="btnSwitch" title="Trocar câmera">⟳</div>
-
+    <div class="cam-side-btn" onclick="switchCamera()">⟳</div>
     <div class="shutter-wrap">
-      <div class="shutter-btn" id="shutterBtn" onclick="captureManual()"></div>
+      <div class="shutter-outer" id="shutterOuter" onclick="captureManual()">
+        <div class="shutter-inner" id="shutterInner"></div>
+      </div>
       <div class="shutter-label" id="shutterLabel">CAPTURAR</div>
     </div>
-
     <div class="gallery-btn" onclick="goToPages()" id="galleryBtn">
       <div class="gallery-empty" id="galleryEmpty">🖼️</div>
       <img id="galleryThumb" src="" style="display:none">
@@ -696,12 +578,35 @@ body {
   </div>
 </div>
 
-<!-- ══════════ PAGES ══════════ -->
+<!-- ══════════════════════════════ PAGES -->
 <div class="screen" id="sPages">
   <div class="pages-header">
     <div class="icon-btn" onclick="goToCamera()">←</div>
     <h2 id="pagesTitle">Capturas</h2>
-    <div class="icon-btn" onclick="clearAllPages()" id="btnClear" title="Limpar tudo">🗑️</div>
+    <div class="icon-btn" onclick="clearAllPages()">🗑</div>
+  </div>
+
+  <!-- Document metadata -->
+  <div class="doc-meta-bar">
+    <div class="meta-field">
+      <div class="meta-label">Tipo / Pasta</div>
+      <select class="meta-select" id="docType" onchange="updateUploadPath()">
+        <option value="BAM">BAM</option>
+        <option value="CIDs">CIDs</option>
+        <option value="Receitas">Receitas</option>
+        <option value="Laudos">Laudos</option>
+        <option value="Exames">Exames</option>
+        <option value="Prontuarios">Prontuários</option>
+        <option value="Outros">Outros</option>
+      </select>
+    </div>
+    <div class="meta-field">
+      <div class="meta-label">Paciente</div>
+      <input class="meta-input" type="text" id="patientName"
+        placeholder="Nome do paciente"
+        oninput="updateUploadPath()"
+        autocomplete="off" autocorrect="off" autocapitalize="words">
+    </div>
   </div>
 
   <div class="pages-scroll" id="pagesGrid">
@@ -712,29 +617,78 @@ body {
   </div>
 
   <div class="pages-footer">
-    <div class="fname-row">
-      <input class="fname-inp" type="text" id="pdfName" value="documentos-sus" placeholder="Nome do arquivo PDF">
+    <!-- Upload path preview -->
+    <div class="upload-summary">
+      <div class="upload-summary-icon">📁</div>
+      <div class="upload-summary-info">
+        <div class="upload-path" id="uploadPathDisplay">Selecione tipo e paciente</div>
+        <div class="upload-drive-status" id="uploadDriveStatus">—</div>
+      </div>
     </div>
+
+    <button class="btn-export" id="btnExport" onclick="doExport()" disabled>
+      <span id="btnExportIcon">⬆️</span>
+      <span id="btnExportLabel">Salvar PDF no Drive</span>
+    </button>
     <div class="btn-row">
-      <button class="btn-pdf" id="btnPDF" onclick="exportPDF()" disabled style="flex:1">
-        ⬇️ &nbsp;Gerar PDF
-      </button>
+      <button class="btn-secondary" onclick="exportLocal()">⬇️ Baixar local</button>
+      <button class="btn-secondary" onclick="clearAllPages()" style="max-width:52px">🗑</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════ PREVIEW ══════════ -->
+<!-- ══════════════════════════════ PREVIEW -->
 <div class="screen" id="sPreview">
   <img id="previewImg" src="" alt="">
   <div class="preview-close" onclick="closePreview()">✕</div>
 </div>
 
-<!-- ══════════ PROGRESS ══════════ -->
+<!-- ══════════════════════════════ UPLOAD SHEET -->
+<div id="uploadSheet">
+  <div class="upload-panel">
+    <div class="upload-panel-handle"></div>
+    <div class="upload-panel-title" id="sheetTitle">Enviando para o Drive</div>
+    <div class="upload-panel-sub" id="sheetSub">Aguarde...</div>
+
+    <div class="upload-step" id="step1">
+      <div class="step-icon" id="step1Icon">📄</div>
+      <div class="step-info">
+        <div class="step-label">Gerando PDF</div>
+        <div class="step-detail" id="step1Detail">Processando imagens...</div>
+      </div>
+      <div class="step-check" id="step1Check">⏳</div>
+    </div>
+
+    <div class="upload-step" id="step2">
+      <div class="step-icon" id="step2Icon">📁</div>
+      <div class="step-info">
+        <div class="step-label">Criando pasta</div>
+        <div class="step-detail" id="step2Detail">Verificando estrutura no Drive...</div>
+      </div>
+      <div class="step-check" id="step2Check">⏸</div>
+    </div>
+
+    <div class="upload-step" id="step3">
+      <div class="step-icon" id="step3Icon">☁️</div>
+      <div class="step-info">
+        <div class="step-label">Enviando arquivo</div>
+        <div class="step-detail" id="step3Detail">Aguardando PDF...</div>
+      </div>
+      <div class="step-check" id="step3Check">⏸</div>
+    </div>
+
+    <button class="upload-done-btn" id="uploadDoneBtn" onclick="closeSheet()" style="display:none">
+      ✅ &nbsp;Concluído
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ PROGRESS -->
 <div id="progOverlay">
-  <div class="prog-ring-wrap">
-    <svg class="prog-ring-svg" width="80" height="80" viewBox="0 0 80 80">
-      <circle class="prog-ring-bg" cx="40" cy="40" r="34" stroke-width="6"/>
-      <circle class="prog-ring-fill" id="progFill" cx="40" cy="40" r="34" stroke-width="6"
+  <div class="prog-wrap">
+    <svg class="prog-svg" width="80" height="80" viewBox="0 0 80 80">
+      <circle class="prog-bg" cx="40" cy="40" r="34" stroke-width="6"/>
+      <circle class="prog-fill" id="progFill" cx="40" cy="40" r="34" stroke-width="6"
         stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
     </svg>
     <div class="prog-pct" id="progPct">0%</div>
@@ -747,11 +701,19 @@ body {
 <script>
 const { jsPDF } = window.jspdf;
 
-// ── State ──
+// ── Config ──────────────────────────────────────────────────────────────────
+// IMPORTANTE: Substitua pelo seu Client ID do Google Cloud Console
+// Passos: console.cloud.google.com → Seu projeto → APIs → Credenciais → OAuth 2.0 Client ID
+// Authorized origins: adicione https://localhost:4443 e https://SEU-IP:4443
+const GOOGLE_CLIENT_ID = 'SEU_CLIENT_ID_AQUI.apps.googleusercontent.com';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const ROOT_FOLDER = 'ScanSUS'; // Pasta raiz no Drive
+
+// ── State ────────────────────────────────────────────────────────────────────
 let pages = [];
 let stream = null;
 let facingMode = 'environment';
-let capMode = 'auto'; // 'auto' | 'manual'
+let capMode = 'auto';
 let bwMode = false;
 let detecting = false;
 let prevGray = null;
@@ -761,13 +723,19 @@ const STABLE_TARGET = 22;
 const COOLDOWN = 3000;
 let prevScreen = 'sCamera';
 
-const video    = document.getElementById('video');
-const cvs      = document.getElementById('captureCanvas');
-const ctx      = cvs.getContext('2d');
-const ovCvs    = document.getElementById('overlayCanvas');
-const octx     = ovCvs.getContext('2d');
+// Drive state
+let driveToken = null;
+let driveUser = null;
+let tokenClient = null;
+let folderCache = {}; // path -> folderId
 
-// ── Screens ──
+const video   = document.getElementById('video');
+const cvs     = document.getElementById('captureCanvas');
+const ctx     = cvs.getContext('2d');
+const ovCvs   = document.getElementById('overlayCanvas');
+const octx    = ovCvs.getContext('2d');
+
+// ── Screens ──────────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -779,14 +747,14 @@ function startApp() {
 }
 
 function goBack() {
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   detecting = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   showScreen('sWelcome');
 }
 
 function goToPages() {
-  prevScreen = 'sCamera';
   renderPages();
+  updateUploadPath();
   showScreen('sPages');
 }
 
@@ -795,71 +763,209 @@ function goToCamera() {
   if (!stream) startCamera();
 }
 
-function closePreview() {
-  showScreen(prevScreen === 'sPages' ? 'sPages' : 'sCamera');
+function closePreview() { showScreen('sPages'); }
+
+// ── Google Identity Services ──────────────────────────────────────────────────
+function initGoogleAuth() {
+  if (!window.google || !google.accounts) {
+    setTimeout(initGoogleAuth, 500); return;
+  }
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) return;
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: handleTokenResponse,
+  });
 }
 
-// ── Camera ──
+function handleTokenResponse(resp) {
+  if (resp.error) { showToast('❌ Login cancelado', 'err'); return; }
+  driveToken = resp.access_token;
+  fetchUserInfo();
+}
+
+async function fetchUserInfo() {
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + driveToken }
+    });
+    const info = await r.json();
+    driveUser = info.name || info.email || 'Conectado';
+    updateDriveCard(true);
+    folderCache = {};
+    showToast('✅ Drive conectado!', 'ok');
+    updateUploadPath();
+  } catch(e) {
+    driveUser = 'Conectado';
+    updateDriveCard(true);
+  }
+}
+
+function driveLogin() {
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) {
+    showToast('⚙️ Configure o Client ID no código', 'err');
+    return;
+  }
+  if (!tokenClient) { initGoogleAuth(); setTimeout(driveLogin, 800); return; }
+  tokenClient.requestAccessToken({ prompt: '' });
+}
+
+function driveLogout() {
+  if (driveToken) google.accounts.oauth2.revoke(driveToken, () => {});
+  driveToken = null; driveUser = null; folderCache = {};
+  updateDriveCard(false);
+  updateUploadPath();
+  showToast('Desconectado do Drive');
+}
+
+function updateDriveCard(connected) {
+  const card   = document.getElementById('driveCard');
+  const icon   = document.getElementById('driveCardIcon');
+  const value  = document.getElementById('driveCardValue');
+  const btn    = document.getElementById('driveCardBtn');
+  card.classList.toggle('connected', connected);
+  if (connected) {
+    icon.textContent = '✅';
+    value.textContent = driveUser;
+    value.classList.remove('dim');
+    btn.textContent = 'Sair';
+    btn.className = 'drive-card-action logout';
+    btn.onclick = driveLogout;
+  } else {
+    icon.textContent = '☁️';
+    value.textContent = 'Não conectado';
+    value.classList.add('dim');
+    btn.textContent = 'Conectar';
+    btn.className = 'drive-card-action login';
+    btn.onclick = driveLogin;
+  }
+}
+
+// ── Drive folder helpers ──────────────────────────────────────────────────────
+async function ensureFolder(name, parentId = 'root') {
+  const cacheKey = parentId + '/' + name;
+  if (folderCache[cacheKey]) return folderCache[cacheKey];
+
+  const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  const search = await driveRequest(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`);
+  const files = search.files || [];
+
+  if (files.length > 0) {
+    folderCache[cacheKey] = files[0].id;
+    return files[0].id;
+  }
+
+  const created = await driveRequest('https://www.googleapis.com/drive/v3/files', 'POST', {
+    name, mimeType: 'application/vnd.google-apps.folder',
+    parents: [parentId]
+  });
+  folderCache[cacheKey] = created.id;
+  return created.id;
+}
+
+async function driveRequest(url, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: { Authorization: 'Bearer ' + driveToken }
+  };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(`Drive API ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function uploadFileToDrive(blob, filename, folderId) {
+  const meta = { name: filename, parents: [folderId], mimeType: 'application/pdf' };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', blob, filename);
+
+  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + driveToken },
+    body: form
+  });
+  if (!r.ok) throw new Error(`Upload failed ${r.status}`);
+  return r.json();
+}
+
+// ── Upload path display ───────────────────────────────────────────────────────
+function updateUploadPath() {
+  const type    = document.getElementById('docType').value;
+  const patient = document.getElementById('patientName').value.trim();
+  const pathEl  = document.getElementById('uploadPathDisplay');
+  const statusEl = document.getElementById('uploadDriveStatus');
+  const btn     = document.getElementById('btnExport');
+  const btnIcon = document.getElementById('btnExportIcon');
+  const btnLabel = document.getElementById('btnExportLabel');
+
+  if (patient) {
+    pathEl.textContent = `ScanSUS / ${type} / ${patient}`;
+    pathEl.classList.remove('dim');
+  } else {
+    pathEl.textContent = 'Preencha o nome do paciente';
+    pathEl.classList.add('dim');
+  }
+
+  if (driveToken) {
+    statusEl.textContent = `☁️ Conectado como ${driveUser || '…'} — salva direto no Drive`;
+    btnIcon.textContent = '⬆️';
+    btnLabel.textContent = 'Salvar PDF no Drive';
+  } else {
+    statusEl.textContent = '💾 Sem Drive conectado — salva localmente';
+    btnIcon.textContent = '⬇️';
+    btnLabel.textContent = 'Baixar PDF';
+  }
+
+  btn.disabled = pages.length === 0 || !patient;
+}
+
+// ── Camera ────────────────────────────────────────────────────────────────────
 async function startCamera() {
   document.getElementById('camBlocked').style.display = 'none';
   setCamStatus('', 'Iniciando câmera...');
 
-  const constraintsList = [
+  const attempts = [
     { video: { facingMode: { ideal: facingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-    { video: { facingMode: facingMode }, audio: false },
+    { video: { facingMode }, audio: false },
     { video: true, audio: false }
   ];
 
   let ok = false;
-  for (const constraints of constraintsList) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      ok = true; break;
-    } catch(e) {
-      console.warn('Camera attempt failed:', e.name, constraints);
-    }
+  for (const c of attempts) {
+    try { stream = await navigator.mediaDevices.getUserMedia(c); ok = true; break; }
+    catch(e) { console.warn('cam attempt', e.name); }
   }
 
-  if (!ok) {
-    showCamBlocked();
-    return;
-  }
+  if (!ok) { showCamBlocked(); return; }
 
   video.srcObject = stream;
   try { await video.play(); } catch(e) {}
-
   detecting = true;
   setCamStatus('on', 'Pronto — aponte para um documento');
-  document.getElementById('shutterBtn').disabled = false;
   requestAnimationFrame(processFrame);
-  showToast('📷 Câmera ativa');
+  showToast('📷 Câmera ativa', 'ok');
 }
 
 function showCamBlocked(err) {
   const el = document.getElementById('camBlocked');
   el.style.display = 'flex';
-  const title = document.getElementById('blockedTitle');
-  const msg = document.getElementById('blockedMsg');
-  const tips = document.getElementById('blockedTips');
-
   if (!err) return;
-
-  if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-    title.textContent = '🚫 Permissão negada';
-    msg.textContent = 'O navegador bloqueou o acesso à câmera.';
-    tips.innerHTML = '<b>Como resolver no celular:</b>Toque em "Configurações" no navegador → Permissões → Câmera → Permitir.<br>Em seguida toque em "Tentar novamente".';
+  const t = document.getElementById('blockedTitle');
+  const m = document.getElementById('blockedMsg');
+  if (err.name === 'NotAllowedError') {
+    t.textContent = '🚫 Permissão negada';
+    m.textContent = 'Permita o acesso à câmera nas configurações do navegador.';
   } else if (location.protocol === 'file:') {
-    title.textContent = '⚠️ Protocolo incorreto';
-    msg.textContent = 'Você abriu o app como arquivo local. A câmera exige HTTPS.';
-    tips.innerHTML = '<b>Solução:</b>Use o arquivo servidor.py incluído.<br>Acesse pelo link mostrado no terminal, não pelo arquivo diretamente.';
-  } else if (err.name === 'NotFoundError') {
-    title.textContent = '📵 Câmera não encontrada';
-    msg.textContent = 'Nenhuma câmera foi detectada neste dispositivo.';
-    tips.innerHTML = '<b>Verifique:</b>Se estiver em um PC sem webcam, use um celular para digitalizar.';
+    t.textContent = '⚠️ Protocolo incorreto';
+    m.textContent = 'Abra via HTTPS usando o servidor.py incluído.';
   } else {
-    title.textContent = '❌ Erro na câmera';
-    msg.textContent = err.message || 'Erro desconhecido.';
-    tips.innerHTML = `<b>Código:</b>${err.name}<br>Tente fechar outros apps que usam a câmera.`;
+    t.textContent = '❌ Erro na câmera';
+    m.textContent = err.message || 'Erro desconhecido.';
   }
 }
 
@@ -882,7 +988,19 @@ function setCamStatus(type, text) {
   d.className = 'cam-dot' + (type ? ' ' + type : '');
 }
 
-// ── Frame processing ──
+// ── Frame processing ──────────────────────────────────────────────────────────
+
+// Smoothed corner state for animation (screen coords)
+let smoothCorners = null;
+// Downscale factor for contour detection (performance)
+const DET_SCALE = 0.25;
+// Tiny canvas for detection at low res
+const detCvs = document.createElement('canvas');
+const detCtx = detCvs.getContext('2d', { willReadFrequently: true });
+// Frame skip counter (run detection every N frames)
+let frameSkip = 0;
+let lastCorners = null; // raw detection result
+
 function processFrame() {
   if (!detecting || !stream) return;
   const vw = video.videoWidth, vh = video.videoHeight;
@@ -894,43 +1012,198 @@ function processFrame() {
   octx.clearRect(0, 0, ovCvs.width, ovCvs.height);
   ctx.drawImage(video, 0, 0, vw, vh);
 
+  // Run contour detection every 3rd frame for perf
+  frameSkip++;
+  if (frameSkip >= 3) {
+    frameSkip = 0;
+    lastCorners = findDocumentCorners(vw, vh);
+  }
+
+  // Smooth corners toward detected position
+  if (lastCorners) {
+    smoothCorners = smoothCorners
+      ? lerpCorners(smoothCorners, lastCorners, 0.18)
+      : lastCorners;
+  } else {
+    smoothCorners = smoothCorners
+      ? lerpCorners(smoothCorners, defaultCorners(ovCvs.width, ovCvs.height), 0.08)
+      : defaultCorners(ovCvs.width, ovCvs.height);
+  }
+
+  const docFound = !!lastCorners;
+
   if (capMode === 'auto') {
     const motion = detectMotion(vw, vh);
-    if (motion < 7) stableFrames = Math.min(stableFrames + 1, STABLE_TARGET);
+    if (motion < 7 && docFound) stableFrames = Math.min(stableFrames + 1, STABLE_TARGET);
     else stableFrames = Math.max(0, stableFrames - 3);
 
-    const progress = stableFrames / STABLE_TARGET;
-    document.getElementById('autoFill').style.width = (progress * 100) + '%';
+    const prog = stableFrames / STABLE_TARGET;
+    document.getElementById('autoFill').style.width = (prog * 100) + '%';
+    document.getElementById('shutterOuter').classList.toggle('armed', stableFrames > STABLE_TARGET * .5);
 
-    // Color the shutter
-    document.getElementById('shutterBtn').classList.toggle('armed', stableFrames > STABLE_TARGET * 0.5);
-
-    drawGuide(progress);
+    drawContourOverlay(smoothCorners, prog, docFound);
 
     if (stableFrames >= STABLE_TARGET && Date.now() - lastCapture > COOLDOWN) {
-      captureFrame();
-      stableFrames = 0;
-      lastCapture = Date.now();
+      captureFrame(); stableFrames = 0; lastCapture = Date.now();
     }
 
-    if (stableFrames > STABLE_TARGET * 0.6)
-      setCamStatus('on', `Estabilizando ${Math.round(progress * 100)}%...`);
-    else if (stableFrames > 5)
-      setCamStatus('on', 'Detectando documento...');
-    else
-      setCamStatus('on', 'Pronto — aponte para um documento');
+    if (!docFound) setCamStatus('on', 'Aponte para o documento…');
+    else if (prog > .6) setCamStatus('on', `Estabilizando ${Math.round(prog*100)}%…`);
+    else setCamStatus('on', 'Documento detectado — mantenha firme');
   } else {
-    drawGuide(0);
+    drawContourOverlay(smoothCorners, 0, docFound);
   }
 
   requestAnimationFrame(processFrame);
 }
 
+// ── Document corner detection (pure JS, no OpenCV) ────────────────────────────
+function findDocumentCorners(vw, vh) {
+  const dw = Math.round(vw * DET_SCALE);
+  const dh = Math.round(vh * DET_SCALE);
+  detCvs.width = dw; detCvs.height = dh;
+  detCtx.drawImage(video, 0, 0, dw, dh);
+  const imgData = detCtx.getImageData(0, 0, dw, dh);
+  const gray = toGrayscale(imgData.data, dw, dh);
+  const blurred = gaussianBlur(gray, dw, dh);
+  const edges = sobelEdge(blurred, dw, dh);
+  const corners = houghRectangle(edges, dw, dh);
+  if (!corners) return null;
+  // Scale corners back to overlay canvas coords
+  const sx = ovCvs.width / dw;
+  const sy = ovCvs.height / dh;
+  return corners.map(([x, y]) => [x * sx, y * sy]);
+}
+
+function toGrayscale(data, w, h) {
+  const g = new Uint8Array(w * h);
+  for (let i = 0; i < g.length; i++)
+    g[i] = (data[i*4]*.299 + data[i*4+1]*.587 + data[i*4+2]*.114)|0;
+  return g;
+}
+
+function gaussianBlur(g, w, h) {
+  // 1D separable 5-tap Gaussian [1,4,6,4,1]/16
+  const k = [1,4,6,4,1], ksum = 16;
+  const tmp = new Uint8Array(w * h);
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let s = 0;
+      for (let ki = -2; ki <= 2; ki++) {
+        const xi = Math.max(0, Math.min(w-1, x+ki));
+        s += g[y*w+xi] * k[ki+2];
+      }
+      tmp[y*w+x] = s / ksum;
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let s = 0;
+      for (let ki = -2; ki <= 2; ki++) {
+        const yi = Math.max(0, Math.min(h-1, y+ki));
+        s += tmp[yi*w+x] * k[ki+2];
+      }
+      out[y*w+x] = s / ksum;
+    }
+  }
+  return out;
+}
+
+function sobelEdge(g, w, h) {
+  const out = new Uint8Array(w * h);
+  for (let y = 1; y < h-1; y++) {
+    for (let x = 1; x < w-1; x++) {
+      const tl=g[(y-1)*w+(x-1)], tc=g[(y-1)*w+x], tr=g[(y-1)*w+(x+1)];
+      const ml=g[y*w+(x-1)],                        mr=g[y*w+(x+1)];
+      const bl=g[(y+1)*w+(x-1)], bc=g[(y+1)*w+x], br=g[(y+1)*w+(x+1)];
+      const gx = -tl - 2*ml - bl + tr + 2*mr + br;
+      const gy = -tl - 2*tc - tr + bl + 2*bc + br;
+      out[y*w+x] = Math.min(255, Math.sqrt(gx*gx + gy*gy)|0);
+    }
+  }
+  return out;
+}
+
+// Simplified Hough-like rectangle finder:
+// Projects edge pixels onto horizontal/vertical axes,
+// finds the 4 strongest peaks → estimates rectangle corners
+function houghRectangle(edges, w, h) {
+  const THRESH = 40;
+  const MARGIN = Math.round(w * 0.08); // ignore near-border noise
+
+  // Accumulate edge density per column and row (in the center band)
+  const colAcc = new Float32Array(w);
+  const rowAcc = new Float32Array(h);
+
+  for (let y = MARGIN; y < h - MARGIN; y++) {
+    for (let x = MARGIN; x < w - MARGIN; x++) {
+      const v = edges[y*w+x];
+      if (v > THRESH) { colAcc[x] += v; rowAcc[y] += v; }
+    }
+  }
+
+  // Smooth accumulators
+  const sc = smoothAcc(colAcc, w, 5);
+  const sr = smoothAcc(rowAcc, h, 5);
+
+  // Find leftmost/rightmost strong column peaks
+  const totalEdge = sc.reduce((a,b) => a+b, 0);
+  if (totalEdge < 200) return null; // not enough edges → no document
+
+  const colPeaks = findTwoPeaks(sc, w, MARGIN);
+  const rowPeaks = findTwoPeaks(sr, h, MARGIN);
+  if (!colPeaks || !rowPeaks) return null;
+
+  const [x0, x1] = colPeaks;
+  const [y0, y1] = rowPeaks;
+
+  // Reject if rectangle is too small (< 30% of frame)
+  if ((x1-x0) < w*0.28 || (y1-y0) < h*0.28) return null;
+
+  // Return TL, TR, BR, BL
+  return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+}
+
+function smoothAcc(arr, len, r) {
+  const out = new Float32Array(len);
+  for (let i = 0; i < len; i++) {
+    let s = 0, c = 0;
+    for (let k = -r; k <= r; k++) {
+      const j = i+k;
+      if (j >= 0 && j < len) { s += arr[j]; c++; }
+    }
+    out[i] = s / c;
+  }
+  return out;
+}
+
+function findTwoPeaks(acc, len, margin) {
+  // Find highest peak, then highest peak on the opposite side
+  let max1 = 0, idx1 = -1;
+  for (let i = margin; i < len-margin; i++) {
+    if (acc[i] > max1) { max1 = acc[i]; idx1 = i; }
+  }
+  if (idx1 < 0 || max1 < 1) return null;
+
+  // Second peak must be on the other half
+  const mid = len / 2;
+  let max2 = 0, idx2 = -1;
+  const searchStart = idx1 < mid ? Math.round(mid) : margin;
+  const searchEnd   = idx1 < mid ? len-margin : Math.round(mid);
+  for (let i = searchStart; i < searchEnd; i++) {
+    if (acc[i] > max2) { max2 = acc[i]; idx2 = i; }
+  }
+  if (idx2 < 0) return null;
+
+  return idx1 < idx2 ? [idx1, idx2] : [idx2, idx1];
+}
+
+// ── Motion detection ──────────────────────────────────────────────────────────
 function detectMotion(vw, vh) {
   const d = ctx.getImageData(vw/4|0, vh/4|0, vw/2|0, vh/2|0).data;
   const g = new Uint8Array(d.length / 4);
-  for (let i = 0; i < g.length; i++)
-    g[i] = (d[i*4]*.299 + d[i*4+1]*.587 + d[i*4+2]*.114)|0;
+  for (let i = 0; i < g.length; i++) g[i] = (d[i*4]*.299 + d[i*4+1]*.587 + d[i*4+2]*.114)|0;
   let diff = 0;
   if (prevGray && prevGray.length === g.length) {
     const step = Math.max(1, g.length/2000|0); let c = 0;
@@ -940,36 +1213,122 @@ function detectMotion(vw, vh) {
   prevGray = g; return diff;
 }
 
-function drawGuide(progress) {
-  const ow = ovCvs.width, oh = ovCvs.height;
-  const margin = 24, radius = 12;
-  const x = margin, y = margin, w = ow - margin*2, h = oh - margin*2;
-  const alpha = .3 + progress * .7;
-  const color = progress > .5 ? `rgba(0,230,118,${alpha})` : `rgba(255,255,255,${alpha * .5})`;
+// ── Corner smoothing helpers ──────────────────────────────────────────────────
+function lerpCorners(a, b, t) {
+  return a.map(([ax, ay], i) => [
+    ax + (b[i][0]-ax)*t,
+    ay + (b[i][1]-ay)*t
+  ]);
+}
+
+function defaultCorners(w, h) {
+  const m = Math.min(w, h) * 0.1;
+  return [[m,m],[w-m,m],[w-m,h-m],[m,h-m]];
+}
+
+// ── Overlay drawing ───────────────────────────────────────────────────────────
+function drawContourOverlay(corners, stabilityProg, docFound) {
+  if (!corners) return;
+  const [tl, tr, br, bl] = corners;
+
+  // Color logic
+  const found = docFound;
+  const stable = stabilityProg > 0.5;
+  const edgeAlpha = found ? (stable ? 0.9 : 0.55) : 0.25;
+  const edgeColor = found
+    ? (stable ? `rgba(10,240,160,${edgeAlpha})` : `rgba(255,200,60,${edgeAlpha})`)
+    : `rgba(255,255,255,${edgeAlpha})`;
 
   octx.save();
-  octx.strokeStyle = color;
-  octx.lineWidth = 2 + progress * 2;
-  octx.shadowColor = progress > .5 ? '#00e676' : 'transparent';
-  octx.shadowBlur = progress * 14;
 
-  // Rounded rect
+  // Dim overlay outside document quad
   octx.beginPath();
-  octx.moveTo(x+radius, y);
-  octx.lineTo(x+w-radius, y); octx.quadraticCurveTo(x+w, y, x+w, y+radius);
-  octx.lineTo(x+w, y+h-radius); octx.quadraticCurveTo(x+w, y+h, x+w-radius, y+h);
-  octx.lineTo(x+radius, y+h); octx.quadraticCurveTo(x, y+h, x, y+h-radius);
-  octx.lineTo(x, y+radius); octx.quadraticCurveTo(x, y, x+radius, y);
+  octx.rect(0, 0, ovCvs.width, ovCvs.height);
+  octx.moveTo(tl[0],tl[1]);
+  octx.lineTo(tr[0],tr[1]);
+  octx.lineTo(br[0],br[1]);
+  octx.lineTo(bl[0],bl[1]);
   octx.closePath();
+  octx.fillStyle = 'rgba(0,0,0,0.35)';
+  octx.fill('evenodd');
+
+  // Document outline
+  octx.beginPath();
+  octx.moveTo(tl[0],tl[1]);
+  octx.lineTo(tr[0],tr[1]);
+  octx.lineTo(br[0],br[1]);
+  octx.lineTo(bl[0],bl[1]);
+  octx.closePath();
+  octx.strokeStyle = edgeColor;
+  octx.lineWidth = 2 + stabilityProg * 2;
+  if (found && stable) {
+    octx.shadowColor = '#0af0a0';
+    octx.shadowBlur = 8 + stabilityProg * 10;
+  }
   octx.stroke();
+
+  octx.shadowBlur = 0;
+
+  // Corner dots with size pulse on stable
+  const CORNER_R = 7 + stabilityProg * 3;
+  [[tl,'tl'],[tr,'tr'],[br,'br'],[bl,'bl']].forEach(([[cx,cy]]) => {
+    // Outer ring
+    octx.beginPath();
+    octx.arc(cx, cy, CORNER_R + 4, 0, Math.PI*2);
+    octx.strokeStyle = found ? `rgba(10,240,160,0.25)` : `rgba(255,255,255,0.15)`;
+    octx.lineWidth = 1.5;
+    octx.stroke();
+
+    // Filled dot
+    octx.beginPath();
+    octx.arc(cx, cy, CORNER_R, 0, Math.PI*2);
+    octx.fillStyle = found
+      ? (stable ? '#0af0a0' : '#ffc840')
+      : 'rgba(255,255,255,0.6)';
+    octx.fill();
+
+    // Inner white center
+    octx.beginPath();
+    octx.arc(cx, cy, CORNER_R * 0.38, 0, Math.PI*2);
+    octx.fillStyle = 'rgba(255,255,255,0.85)';
+    octx.fill();
+  });
+
+  // Corner L-brackets (visual polish)
+  const ARM = 22;
+  octx.strokeStyle = edgeColor;
+  octx.lineWidth = 3;
+  octx.lineCap = 'round';
+  [
+    [tl, [ 1, 0], [ 0, 1]],
+    [tr, [-1, 0], [ 0, 1]],
+    [br, [-1, 0], [ 0,-1]],
+    [bl, [ 1, 0], [ 0,-1]],
+  ].forEach(([[cx,cy],[dx1,dy1],[dx2,dy2]]) => {
+    octx.beginPath();
+    octx.moveTo(cx + dx1*ARM, cy + dy1*ARM);
+    octx.lineTo(cx, cy);
+    octx.lineTo(cx + dx2*ARM, cy + dy2*ARM);
+    octx.stroke();
+  });
+
+  // Stability arc around TL corner (progress indicator)
+  if (capMode === 'auto' && stabilityProg > 0) {
+    octx.beginPath();
+    octx.arc(tl[0], tl[1], CORNER_R + 9, -Math.PI/2, -Math.PI/2 + Math.PI*2*stabilityProg);
+    octx.strokeStyle = '#0af0a0';
+    octx.lineWidth = 2.5;
+    octx.shadowColor = '#0af0a0';
+    octx.shadowBlur = 6;
+    octx.stroke();
+    octx.shadowBlur = 0;
+  }
+
   octx.restore();
 }
 
-// ── Capture ──
-function captureManual() {
-  if (!stream) return;
-  captureFrame();
-}
+// ── Capture ───────────────────────────────────────────────────────────────────
+function captureManual() { if (stream) captureFrame(); }
 
 function captureFrame() {
   const vw = video.videoWidth, vh = video.videoHeight;
@@ -979,16 +1338,10 @@ function captureFrame() {
   const raw = ctx.getImageData(0, 0, vw, vh);
   ctx.putImageData(bwMode ? toBW(raw) : enhanceColor(raw), 0, 0);
   const dataURL = cvs.toDataURL('image/jpeg', .92);
-  pages.push({
-    id: Date.now(),
-    dataURL,
-    bw: bwMode,
-    label: '',
-    time: new Date().toLocaleTimeString('pt-BR')
-  });
+  pages.push({ id: Date.now(), dataURL, bw: bwMode, time: new Date().toLocaleTimeString('pt-BR') });
   updateGallery();
   flash();
-  showToast(`✅ Pág. ${pages.length} capturada`);
+  showToast(`✅ Pág. ${pages.length} capturada`, 'ok');
   updatePageCounter();
 }
 
@@ -998,55 +1351,45 @@ function flash() {
   setTimeout(() => f.style.opacity = '0', 100);
 }
 
-// ── Image processing ──
+// ── Image processing ──────────────────────────────────────────────────────────
 function toBW(id) {
-  const d = id.data; let mn = 255, mx = 0;
-  for (let i = 0; i < d.length; i+=4) {
-    const v = (d[i]*.299 + d[i+1]*.587 + d[i+2]*.114)|0;
-    if (v < mn) mn = v; if (v > mx) mx = v;
-  }
-  const r = mx - mn || 1;
-  for (let i = 0; i < d.length; i+=4) {
-    let v = ((d[i]*.299 + d[i+1]*.587 + d[i+2]*.114) - mn) / r;
-    v = v < .5 ? 2*v*v : 1-(-2*v+2)**2/2;
-    v = Math.min(255, Math.max(0, v*255*1.1))|0;
-    d[i] = d[i+1] = d[i+2] = v;
+  const d = id.data; let mn=255, mx=0;
+  for (let i=0;i<d.length;i+=4) { const v=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0; if(v<mn)mn=v; if(v>mx)mx=v; }
+  const rng = mx-mn||1;
+  for (let i=0;i<d.length;i+=4) {
+    let v=((d[i]*.299+d[i+1]*.587+d[i+2]*.114)-mn)/rng;
+    v=v<.5?2*v*v:1-(-2*v+2)**2/2;
+    v=Math.min(255,Math.max(0,v*255*1.1))|0;
+    d[i]=d[i+1]=d[i+2]=v;
   }
   return id;
 }
 
 function enhanceColor(id) {
-  const d = id.data; let mn = 255, mx = 0;
-  for (let i = 0; i < d.length; i+=4) {
-    const v = (d[i]*.299 + d[i+1]*.587 + d[i+2]*.114)|0;
-    if (v < mn) mn = v; if (v > mx) mx = v;
-  }
-  const r = mx - mn || 1;
-  for (let i = 0; i < d.length; i+=4) {
-    for (let c = 0; c < 3; c++) {
-      let v = (d[i+c] - mn) / r;
-      v = v < .5 ? 2*v*v : 1-(-2*v+2)**2/2;
-      d[i+c] = Math.min(255, Math.max(0, v*255*1.05))|0;
+  const d = id.data; let mn=255, mx=0;
+  for (let i=0;i<d.length;i+=4) { const v=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0; if(v<mn)mn=v; if(v>mx)mx=v; }
+  const rng = mx-mn||1;
+  for (let i=0;i<d.length;i+=4) {
+    for (let c=0;c<3;c++) {
+      let v=(d[i+c]-mn)/rng;
+      v=v<.5?2*v*v:1-(-2*v+2)**2/2;
+      d[i+c]=Math.min(255,Math.max(0,v*255*1.05))|0;
     }
   }
   return id;
 }
 
-// ── UI updates ──
+// ── UI ────────────────────────────────────────────────────────────────────────
 function updateGallery() {
   const thumb = document.getElementById('galleryThumb');
   const empty = document.getElementById('galleryEmpty');
   const count = document.getElementById('galleryCount');
   if (pages.length > 0) {
     thumb.src = pages[pages.length-1].dataURL;
-    thumb.style.display = 'block';
-    empty.style.display = 'none';
-    count.style.display = 'block';
-    count.textContent = pages.length;
+    thumb.style.display = 'block'; empty.style.display = 'none';
+    count.style.display = 'block'; count.textContent = pages.length;
   } else {
-    thumb.style.display = 'none';
-    empty.style.display = 'flex';
-    count.style.display = 'none';
+    thumb.style.display = 'none'; empty.style.display = 'flex'; count.style.display = 'none';
   }
 }
 
@@ -1056,95 +1399,71 @@ function updatePageCounter() {
 
 function setCapMode(m) {
   capMode = m;
-  document.getElementById('pillAuto').classList.toggle('active', m === 'auto');
-  document.getElementById('pillManual').classList.toggle('active', m === 'manual');
-  document.getElementById('autoBar').style.display = m === 'auto' ? 'block' : 'none';
+  document.getElementById('pillAuto').classList.toggle('active', m==='auto');
+  document.getElementById('pillManual').classList.toggle('active', m==='manual');
+  document.getElementById('autoBar').style.display = m==='auto' ? 'block' : 'none';
   stableFrames = 0;
   document.getElementById('autoFill').style.width = '0%';
-  document.getElementById('shutterBtn').classList.remove('armed');
-  document.getElementById('shutterLabel').textContent = m === 'auto' ? 'AUTO' : 'CAPTURAR';
+  document.getElementById('shutterOuter').classList.remove('armed');
+  document.getElementById('shutterLabel').textContent = m==='auto' ? 'AUTO' : 'CAPTURAR';
 }
 
 function toggleBW() {
   bwMode = !bwMode;
   document.getElementById('pillBW').classList.toggle('active', bwMode);
-  showToast(bwMode ? '⚫ Preto e branco ativado' : '🎨 Colorido ativado');
+  showToast(bwMode ? '⚫ P&B ativado' : '🎨 Colorido', 'ok');
 }
 
-// ── Pages screen ──
+// ── Pages render ──────────────────────────────────────────────────────────────
 function renderPages() {
   const grid = document.getElementById('pagesGrid');
   document.getElementById('pagesTitle').textContent = `Capturas (${pages.length})`;
-  document.getElementById('btnPDF').disabled = pages.length === 0;
+  document.getElementById('btnExport').disabled = pages.length === 0 || !document.getElementById('patientName').value.trim();
 
   if (pages.length === 0) {
     grid.innerHTML = `<div class="pages-empty"><div class="pages-empty-icon">📂</div><div>Nenhuma captura ainda.<br>Use a câmera para digitalizar.</div></div>`;
     return;
   }
-
   grid.innerHTML = '';
   pages.forEach((p, i) => {
     const card = document.createElement('div');
-    card.className = 'page-thumb-card';
-    card.dataset.id = p.id;
+    card.className = 'page-card';
     card.innerHTML = `
       <img src="${p.dataURL}" onclick="openPreview(${p.id})">
       <div class="page-num">${i+1}</div>
-      <div class="page-del-btn" onclick="deletePage(${p.id})">✕</div>
-      ${p.bw ? '<div class="bw-badge" style="display:block">P&B</div>' : ''}
-      <input class="page-label-inp" type="text" placeholder="Nome do paciente..." value="${escHtml(p.label)}" oninput="updateLabel(${p.id},this.value)">
+      <div class="page-del" onclick="deletePage(${p.id})">✕</div>
+      ${p.bw ? '<div class="bw-tag">P&B</div>' : ''}
     `;
     grid.appendChild(card);
   });
 }
 
-function escHtml(s) { return s.replace(/"/g,'&quot;'); }
-
-function updateLabel(id, val) {
-  const p = pages.find(x => x.id === id);
-  if (p) p.label = val.trim();
-}
-
 function deletePage(id) {
   pages = pages.filter(p => p.id !== id);
   updateGallery(); updatePageCounter();
-  renderPages();
+  renderPages(); updateUploadPath();
   showToast('Página removida');
 }
 
 function clearAllPages() {
-  if (pages.length === 0) return;
+  if (!pages.length) return;
   if (!confirm(`Remover todas as ${pages.length} páginas?`)) return;
   pages = [];
   updateGallery(); updatePageCounter();
-  renderPages();
-  showToast('🗑️ Tudo removido');
+  renderPages(); updateUploadPath();
 }
 
 function openPreview(id) {
-  const p = pages.find(x => x.id === id);
-  if (!p) return;
-  prevScreen = 'sPages';
+  const p = pages.find(x => x.id === id); if (!p) return;
   document.getElementById('previewImg').src = p.dataURL;
   showScreen('sPreview');
 }
 
-// ── PDF Export ──
-async function exportPDF() {
-  if (pages.length === 0) return;
-  const name = (document.getElementById('pdfName').value || 'documentos-sus').trim().replace(/[^\w\s\-]/g,'').replace(/\s+/g,'-');
-
-  // Sort by label then capture order
-  const sorted = [...pages].sort((a,b) => {
-    const na = a.label || 'zzz', nb = b.label || 'zzz';
-    if (na !== nb) return na.localeCompare(nb, 'pt-BR');
-    return a.id - b.id;
-  });
-
-  showProg(true);
+// ── PDF builder ───────────────────────────────────────────────────────────────
+async function buildPDF() {
+  const sorted = [...pages].sort((a,b) => a.id - b.id);
   const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
   const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
-
   for (let i = 0; i < sorted.length; i++) {
     setProg((i+1)/sorted.length, `Pág. ${i+1}/${sorted.length}`);
     if (i > 0) pdf.addPage();
@@ -1159,44 +1478,143 @@ async function exportPDF() {
       };
       img.src = sorted[i].dataURL;
     });
-    await new Promise(r => setTimeout(r, 30));
+    await new Promise(r => setTimeout(r, 25));
   }
+  return pdf;
+}
 
-  pdf.save(name + '.pdf');
+function buildFilename() {
+  const patient = document.getElementById('patientName').value.trim();
+  const type    = document.getElementById('docType').value;
+  const date    = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  return `${type}_${patient.replace(/\s+/g,'_')}_${date}.pdf`;
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+async function doExport() {
+  if (!driveToken) { exportLocal(); return; }
+  const patient = document.getElementById('patientName').value.trim();
+  if (!patient) { showToast('⚠️ Preencha o nome do paciente', 'err'); return; }
+
+  showSheet(true);
+  const filename = buildFilename();
+  const type = document.getElementById('docType').value;
+
+  try {
+    // Step 1: Build PDF
+    setStep(1, 'active', '⏳', `Processando ${pages.length} página${pages.length>1?'s':''}...`);
+    showProg(true);
+    const pdf = await buildPDF();
+    const blob = pdf.output('blob');
+    showProg(false);
+    setStep(1, 'done', '✅', filename);
+
+    // Step 2: Ensure folders ScanSUS / Tipo / Paciente
+    setStep(2, 'active', '⏳', `Verificando ScanSUS/${type}/${patient}...`);
+    const rootId    = await ensureFolder(ROOT_FOLDER, 'root');
+    const typeId    = await ensureFolder(type, rootId);
+    const patientId = await ensureFolder(patient, typeId);
+    setStep(2, 'done', '✅', `Drive: ScanSUS/${type}/${patient}/`);
+
+    // Step 3: Upload
+    setStep(3, 'active', '⏳', `Enviando ${(blob.size/1024).toFixed(0)} KB...`);
+    const result = await uploadFileToDrive(blob, filename, patientId);
+    setStep(3, 'done', '✅', `Salvo: ${result.name}`);
+
+    document.getElementById('sheetTitle').textContent = 'Arquivo salvo no Drive ✅';
+    document.getElementById('sheetSub').textContent   = `ScanSUS / ${type} / ${patient}`;
+    document.getElementById('uploadDoneBtn').style.display = 'block';
+    showToast('☁️ PDF salvo no Drive!', 'ok');
+
+  } catch(e) {
+    showProg(false);
+    console.error(e);
+    if (e.message && e.message.includes('401')) {
+      driveToken = null; updateDriveCard(false);
+      showToast('⚠️ Sessão expirada — reconecte', 'err');
+    } else {
+      showToast('❌ Erro no upload: ' + (e.message||''), 'err');
+    }
+    setStep(3, 'err', '❌', e.message || 'Falha no envio');
+    document.getElementById('uploadDoneBtn').style.display = 'block';
+    document.getElementById('uploadDoneBtn').textContent = '✕ Fechar';
+  }
+}
+
+async function exportLocal() {
+  const patient = document.getElementById('patientName').value.trim() || 'documentos';
+  showProg(true);
+  try {
+    const pdf = await buildPDF();
+    pdf.save(buildFilename());
+    showToast('⬇️ PDF baixado!', 'ok');
+  } catch(e) {
+    showToast('❌ Erro ao gerar PDF', 'err');
+  }
   showProg(false);
-  showToast(`📄 PDF gerado · ${sorted.length} pág.`);
 }
 
-function showProg(show) {
-  document.getElementById('progOverlay').classList.toggle('show', show);
+// ── Upload sheet ──────────────────────────────────────────────────────────────
+function showSheet(show) {
+  const el = document.getElementById('uploadSheet');
+  el.classList.toggle('show', show);
+  if (show) {
+    // Reset steps
+    [1,2,3].forEach(i => setStep(i, '', '⏸', i===1?'Aguardando...':'Aguardando etapa anterior...'));
+    document.getElementById('uploadDoneBtn').style.display = 'none';
+    document.getElementById('sheetTitle').textContent = 'Enviando para o Drive';
+    document.getElementById('sheetSub').textContent = 'Aguarde...';
+  }
 }
+
+function closeSheet() { document.getElementById('uploadSheet').classList.remove('show'); }
+
+function setStep(num, state, icon, detail) {
+  const iconEl   = document.getElementById(`step${num}Icon`);
+  const checkEl  = document.getElementById(`step${num}Check`);
+  const detailEl = document.getElementById(`step${num}Detail`);
+  iconEl.className = 'step-icon' + (state ? ' ' + state : '');
+  checkEl.textContent = icon;
+  detailEl.textContent = detail;
+}
+
+// ── Progress overlay ──────────────────────────────────────────────────────────
+function showProg(show) { document.getElementById('progOverlay').classList.toggle('show', show); }
 function setProg(p, lbl) {
-  const circ = 213.6;
-  document.getElementById('progFill').style.strokeDashoffset = circ * (1-p);
-  document.getElementById('progPct').textContent = Math.round(p*100) + '%';
+  document.getElementById('progFill').style.strokeDashoffset = 213.6*(1-p);
+  document.getElementById('progPct').textContent = Math.round(p*100)+'%';
   document.getElementById('progLbl').textContent = lbl;
 }
 
-// ── Toast ──
+// ── Toast ─────────────────────────────────────────────────────────────────────
 let toastTimer;
-function showToast(msg, err=false) {
+function showToast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'show' + (err ? ' err' : '');
+  t.className = 'show' + (type ? ' '+type : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.className = '', 2500);
+  toastTimer = setTimeout(() => t.className='', 2600);
 }
 
-// ── Init ──
-if (location.protocol === 'file:') {
+// ── Init ──────────────────────────────────────────────────────────────────────
+if (location.protocol === 'file:' || !navigator.mediaDevices?.getUserMedia) {
   document.getElementById('httpsWarn').style.display = 'block';
 }
 
-// Check if camera is available at all
-if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-  const warn = document.getElementById('httpsWarn');
-  warn.style.display = 'block';
-  warn.innerHTML = '<strong>⚠️ Câmera não disponível neste contexto</strong>Abra via HTTPS ou localhost. Arquivos locais (file://) não têm acesso à câmera.';
+// Load Google Identity Services
+(function loadGIS() {
+  if (GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = initGoogleAuth;
+    document.head.appendChild(s);
+  }
+})();
+
+// Show config notice if client ID not set
+if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) {
+  const el = document.getElementById('driveCardValue');
+  el.textContent = 'Client ID não configurado';
 }
 </script>
 </body>
