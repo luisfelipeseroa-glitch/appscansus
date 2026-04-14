@@ -999,7 +999,8 @@ const detCvs = document.createElement('canvas');
 const detCtx = detCvs.getContext('2d', { willReadFrequently: true });
 // Frame skip counter (run detection every N frames)
 let frameSkip = 0;
-let lastCorners = null; // raw detection result
+let lastCorners = null;   // VIDEO-space corners for crop
+let lastOverlayCorners = null; // OVERLAY-space corners for drawing
 
 function processFrame() {
   if (!detecting || !stream) return;
@@ -1016,21 +1017,21 @@ function processFrame() {
   frameSkip++;
   if (frameSkip >= 3) {
     frameSkip = 0;
-    lastCorners = findDocumentCorners(vw, vh);
+    lastOverlayCorners = findDocumentCorners(vw, vh);
   }
 
   // Smooth corners toward detected position
-  if (lastCorners) {
+  if (lastOverlayCorners) {
     smoothCorners = smoothCorners
-      ? lerpCorners(smoothCorners, lastCorners, 0.18)
-      : lastCorners;
+      ? lerpCorners(smoothCorners, lastOverlayCorners, 0.18)
+      : lastOverlayCorners;
   } else {
     smoothCorners = smoothCorners
       ? lerpCorners(smoothCorners, defaultCorners(ovCvs.width, ovCvs.height), 0.08)
       : defaultCorners(ovCvs.width, ovCvs.height);
   }
 
-  const docFound = !!lastCorners;
+  const docFound = !!lastOverlayCorners;
 
   if (capMode === 'auto') {
     const motion = detectMotion(vw, vh);
@@ -1067,12 +1068,14 @@ function findDocumentCorners(vw, vh) {
   const gray = toGrayscale(imgData.data, dw, dh);
   const blurred = gaussianBlur(gray, dw, dh);
   const edges = sobelEdge(blurred, dw, dh);
-  const corners = houghRectangle(edges, dw, dh);
-  if (!corners) return null;
-  // Scale corners back to overlay canvas coords
-  const sx = ovCvs.width / dw;
-  const sy = ovCvs.height / dh;
-  return corners.map(([x, y]) => [x * sx, y * sy]);
+  const rawCorners = houghRectangle(edges, dw, dh);
+  if (!rawCorners) { lastCorners = null; return null; }
+  // Store VIDEO-space corners for perspectiveCrop
+  const vidSx = vw / dw, vidSy = vh / dh;
+  lastCorners = rawCorners.map(([x, y]) => [x * vidSx, y * vidSy]);
+  // Return OVERLAY-space corners for drawing
+  const ovSx = ovCvs.width / dw, ovSy = ovCvs.height / dh;
+  return rawCorners.map(([x, y]) => [x * ovSx, y * ovSy]);
 }
 
 function toGrayscale(data, w, h) {
@@ -1333,16 +1336,117 @@ function captureManual() { if (stream) captureFrame(); }
 function captureFrame() {
   const vw = video.videoWidth, vh = video.videoHeight;
   if (!vw || !vh) return;
+
+  // Draw full frame to working canvas
   cvs.width = vw; cvs.height = vh;
   ctx.drawImage(video, 0, 0);
-  const raw = ctx.getImageData(0, 0, vw, vh);
-  ctx.putImageData(bwMode ? toBW(raw) : enhanceColor(raw), 0, 0);
-  const dataURL = cvs.toDataURL('image/jpeg', .92);
+
+  let dataURL;
+
+  // If we have detected corners, warp the document to a flat rectangle
+  if (lastCorners && lastCorners.length === 4) {
+    dataURL = perspectiveCrop(vw, vh);
+  } else {
+    // Fallback: save full frame
+    const raw = ctx.getImageData(0, 0, vw, vh);
+    ctx.putImageData(bwMode ? toBW(raw) : enhanceColor(raw), 0, 0);
+    dataURL = cvs.toDataURL('image/jpeg', .92);
+  }
+
   pages.push({ id: Date.now(), dataURL, bw: bwMode, time: new Date().toLocaleTimeString('pt-BR') });
   updateGallery();
   flash();
   showToast(`✅ Pág. ${pages.length} capturada`, 'ok');
   updatePageCounter();
+}
+
+/**
+ * perspectiveCrop — maps the detected quad to a flat A4-proportioned canvas.
+ *
+ * VIDEO coords, then use a scanline-based inverse perspective transform
+ * (pure JS, no GPU needed) to produce a clean top-down image.
+ */
+function perspectiveCrop(vw, vh) {
+  // lastCorners are already in VIDEO space (set by findDocumentCorners)
+  // Order: TL, TR, BR, BL
+  const [tl, tr, br, bl] = lastCorners;
+
+  // Output dimensions: measure average width/height of quad
+  const wTop  = Math.hypot(tr[0]-tl[0], tr[1]-tl[1]);
+  const wBot  = Math.hypot(br[0]-bl[0], br[1]-bl[1]);
+  const hLeft = Math.hypot(bl[0]-tl[0], bl[1]-tl[1]);
+  const hRight= Math.hypot(br[0]-tr[0], br[1]-tr[1]);
+  const outW  = Math.round(Math.max(wTop, wBot));
+  const outH  = Math.round(Math.max(hLeft, hRight));
+
+  // Sanity: must be at least 200×200
+  if (outW < 200 || outH < 200) {
+    const raw = ctx.getImageData(0, 0, vw, vh);
+    ctx.putImageData(bwMode ? toBW(raw) : enhanceColor(raw), 0, 0);
+    return cvs.toDataURL('image/jpeg', .92);
+  }
+
+  // Read source pixels
+  const srcData = ctx.getImageData(0, 0, vw, vh).data;
+
+  // Create output canvas
+  const outCvs = document.createElement('canvas');
+  outCvs.width = outW; outCvs.height = outH;
+  const outCtx = outCvs.getContext('2d');
+  const outImg = outCtx.createImageData(outW, outH);
+  const dst = outImg.data;
+
+  // Inverse bilinear mapping: for each destination pixel (u,v) in [0,1]²
+  // compute the corresponding source pixel via bilinear interpolation of corners.
+  // This is the standard "four-point" inverse warp.
+  for (let dstY = 0; dstY < outH; dstY++) {
+    const v = dstY / (outH - 1);
+    for (let dstX = 0; dstX < outW; dstX++) {
+      const u = dstX / (outW - 1);
+
+      // Bilinear: P = (1-v)*[(1-u)*TL + u*TR] + v*[(1-u)*BL + u*BR]
+      const srcX = (1-v)*((1-u)*tl[0] + u*tr[0]) + v*((1-u)*bl[0] + u*br[0]);
+      const srcY = (1-v)*((1-u)*tl[1] + u*tr[1]) + v*((1-u)*bl[1] + u*br[1]);
+
+      // Bilinear sample from source
+      const x0 = srcX|0, y0 = srcY|0;
+      const x1 = Math.min(x0+1, vw-1), y1 = Math.min(y0+1, vh-1);
+      const fx = srcX - x0, fy = srcY - y0;
+
+      const i00 = (y0*vw + x0)*4;
+      const i10 = (y0*vw + x1)*4;
+      const i01 = (y1*vw + x0)*4;
+      const i11 = (y1*vw + x1)*4;
+
+      const di = (dstY*outW + dstX)*4;
+      for (let c = 0; c < 3; c++) {
+        dst[di+c] = (
+          srcData[i00+c]*(1-fx)*(1-fy) +
+          srcData[i10+c]*fx*(1-fy) +
+          srcData[i01+c]*(1-fx)*fy +
+          srcData[i11+c]*fx*fy
+        )|0;
+      }
+      dst[di+3] = 255;
+    }
+  }
+
+  // Apply enhancement
+  const enhanced = bwMode ? toBW(outImg) : enhanceColor(outImg);
+  outCtx.putImageData(enhanced, 0, 0);
+
+  // Auto-rotate if landscape (width > height → rotate 90° to portrait)
+  if (outW > outH) {
+    const rotCvs = document.createElement('canvas');
+    rotCvs.width = outH; rotCvs.height = outW;
+    const rotCtx = rotCvs.getContext('2d');
+    rotCtx.translate(rotCvs.width/2, rotCvs.height/2);
+    rotCtx.rotate(Math.PI/2);
+    rotCtx.drawImage(outCvs, -outW/2, -outH/2);
+    return rotCvs.toDataURL('image/jpeg', .92);
+  }
+
+  return outCvs.toDataURL('image/jpeg', .92);
 }
 
 function flash() {
