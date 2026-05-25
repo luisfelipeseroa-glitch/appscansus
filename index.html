@@ -336,131 +336,155 @@ body{height:100dvh;font-family:'Sora',sans-serif;background:var(--bg);color:var(
 <div id="toast"></div>
 
 <script>
+(function() { // IIFE wrapper — eliminates all duplicate-declaration errors
+'use strict';
+
 const { jsPDF } = window.jspdf;
 
 // ── Config ────────────────────────────────────────────────────────────────────
-// Substitua pelo seu Client ID do Google Cloud Console.
-// Escopos necessários: drive.file + picker
-// Em "APIs ativadas": Drive API + Picker API
-// Em "Origens autorizadas": https://localhost:4443 e https://SEU-IP:4443
-const GOOGLE_CLIENT_ID  = 'SEU_CLIENT_ID_AQUI.apps.googleusercontent.com';
-const GOOGLE_API_KEY    = 'SUA_API_KEY_AQUI'; // necessária só para o Picker
-const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file';
+const GOOGLE_CLIENT_ID = 'SEU_CLIENT_ID_AQUI.apps.googleusercontent.com';
+const GOOGLE_API_KEY   = 'SUA_API_KEY_AQUI';
+const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let pages = [];
-let stream = null;
-let facingMode = 'environment';
-let capMode = 'auto';
-let bwMode = false;
-let detecting = false;
-let prevGray = null;
-let stableFrames = 0;
-let lastCapture = 0;
+let pages          = [];
+let stream         = null;
+let facingMode     = 'environment';
+let capMode        = 'auto';
+let bwMode         = false;
+let detecting      = false;
+let prevGray       = null;
+let stableFrames   = 0;
+let lastCapture    = 0;
+let toastTimer;
 const STABLE_TARGET = 22;
-const COOLDOWN = 3000;
+const COOLDOWN      = 3000;
 
-// Drive state
-let driveToken = null;
-let driveUser  = null;
-let tokenClient = null;
-let selectedFolder = null; // { id, name, path }
+// Drive
+let driveToken      = null;
+let driveUser       = null;
+let tokenClient     = null;
+let selectedFolder  = null;
 let pickerApiLoaded = false;
 
+// DOM refs
 const video  = document.getElementById('video');
 const cvs    = document.getElementById('captureCanvas');
 const ctx    = cvs.getContext('2d');
 const ovCvs  = document.getElementById('overlayCanvas');
 const octx   = ovCvs.getContext('2d');
 
-// ── Screens ───────────────────────────────────────────────────────────────────
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
-function startApp(){showScreen('sCamera');startCamera()}
-function goBack(){detecting=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}showScreen('sWelcome')}
-function goToPages(){renderPages();updateExportBtn();showScreen('sPages')}
-function goToCamera(){showScreen('sCamera');if(!stream)startCamera()}
-function closePreview(){showScreen('sPages')}
+// CV state
+let smoothCorners      = null;
+let lastCorners        = null;
+let lastOverlayCorners = null;
+let frameSkip          = 0;
+const DET_SCALE = 0.25;
+const detCvs = document.createElement('canvas');
+const detCtx = detCvs.getContext('2d', { willReadFrequently: true });
 
-// ── Google Auth (GIS) ─────────────────────────────────────────────────────────
-function initGoogleAuth(){
-  if(!window.google||!google.accounts){setTimeout(initGoogleAuth,500);return}
-  if(!GOOGLE_CLIENT_ID||GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID'))return;
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:GOOGLE_CLIENT_ID,
-    scope:DRIVE_SCOPE,
-    callback:handleTokenResponse,
+// ── Screens ───────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+window.startApp      = function() { showScreen('sCamera'); startCamera(); };
+window.goBack        = function() { detecting=false; if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;} showScreen('sWelcome'); };
+window.goToPages     = function() { renderPages(); updateExportBtn(); showScreen('sPages'); };
+window.goToCamera    = function() { showScreen('sCamera'); if(!stream) startCamera(); };
+window.closePreview  = function() { showScreen('sPages'); };
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type ? ' '+type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 2600);
+}
+
+// ── Google Auth ───────────────────────────────────────────────────────────────
+function initGoogleAuth() {
+  if (!window.google || !google.accounts) { setTimeout(initGoogleAuth, 500); return; }
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: handleTokenResponse,
   });
 }
 
-function handleTokenResponse(resp){
-  if(resp.error){showToast('❌ Login cancelado','err');return}
-  driveToken=resp.access_token;
+function handleTokenResponse(resp) {
+  if (resp.error) { showToast('❌ Login cancelado', 'err'); return; }
+  driveToken = resp.access_token;
   fetchUserInfo();
   loadPickerApi();
 }
 
-async function fetchUserInfo(){
-  try{
-    const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+driveToken}});
-    const info=await r.json();
-    driveUser=info.name||info.email||'Conectado';
+async function fetchUserInfo() {
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + driveToken } });
+    const info = await res.json();
+    driveUser = info.name || info.email || 'Conectado';
     updateDriveCard(true);
-    showToast('✅ Drive conectado!','ok');
+    showToast('✅ Drive conectado!', 'ok');
     updateExportBtn();
-  }catch(e){driveUser='Conectado';updateDriveCard(true)}
+  } catch(e) { driveUser = 'Conectado'; updateDriveCard(true); }
 }
 
-function driveLogin(){
-  if(!GOOGLE_CLIENT_ID||GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')){showToast('⚙️ Configure o Client ID no código','err');return}
-  if(!tokenClient){initGoogleAuth();setTimeout(driveLogin,800);return}
-  tokenClient.requestAccessToken({prompt:''});
-}
+window.driveLogin = function() {
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) { showToast('⚙️ Configure o Client ID no código', 'err'); return; }
+  if (!tokenClient) { initGoogleAuth(); setTimeout(window.driveLogin, 800); return; }
+  tokenClient.requestAccessToken({ prompt: '' });
+};
 
-function driveLogout(){
-  if(driveToken)google.accounts.oauth2.revoke(driveToken,()=>{});
-  driveToken=null;driveUser=null;selectedFolder=null;
-  updateDriveCard(false);updateDestRow();updateExportBtn();
+window.driveLogout = function() {
+  if (driveToken) google.accounts.oauth2.revoke(driveToken, () => {});
+  driveToken = null; driveUser = null; selectedFolder = null;
+  updateDriveCard(false); updateDestRow(); updateExportBtn();
   showToast('Desconectado do Drive');
-}
+};
 
-function updateDriveCard(connected){
-  const card=document.getElementById('driveCard');
-  const icon=document.getElementById('driveCardIcon');
-  const val=document.getElementById('driveCardValue');
-  const btn=document.getElementById('driveCardBtn');
-  card.classList.toggle('connected',connected);
-  if(connected){icon.textContent='✅';val.textContent=driveUser;val.classList.remove('dim');btn.textContent='Sair';btn.className='drive-card-action logout';btn.onclick=driveLogout}
-  else{icon.textContent='☁️';val.textContent='Não conectado';val.classList.add('dim');btn.textContent='Conectar';btn.className='drive-card-action login';btn.onclick=driveLogin}
+function updateDriveCard(connected) {
+  const card = document.getElementById('driveCard');
+  const icon = document.getElementById('driveCardIcon');
+  const val  = document.getElementById('driveCardValue');
+  const btn  = document.getElementById('driveCardBtn');
+  card.classList.toggle('connected', connected);
+  if (connected) {
+    icon.textContent = '✅'; val.textContent = driveUser; val.classList.remove('dim');
+    btn.textContent = 'Sair'; btn.className = 'drive-card-action logout'; btn.onclick = window.driveLogout;
+  } else {
+    icon.textContent = '☁️'; val.textContent = 'Não conectado'; val.classList.add('dim');
+    btn.textContent = 'Conectar'; btn.className = 'drive-card-action login'; btn.onclick = window.driveLogin;
+  }
 }
 
 // ── Google Picker ─────────────────────────────────────────────────────────────
-function loadPickerApi(){
-  if(pickerApiLoaded)return;
-  if(!window.gapi){
-    const s=document.createElement('script');
-    s.src='https://apis.google.com/js/api.js';
-    s.onload=()=>gapi.load('picker',()=>{pickerApiLoaded=true});
+function loadPickerApi() {
+  if (pickerApiLoaded) return;
+  if (!window.gapi) {
+    const s = document.createElement('script');
+    s.src = 'https://apis.google.com/js/api.js';
+    s.onload = () => gapi.load('picker', () => { pickerApiLoaded = true; });
     document.head.appendChild(s);
-  }else{
-    gapi.load('picker',()=>{pickerApiLoaded=true});
+  } else {
+    gapi.load('picker', () => { pickerApiLoaded = true; });
   }
 }
 
-function openDrivePicker(){
-  if(!driveToken){showToast('⚠️ Conecte o Drive primeiro','err');return}
-  if(!GOOGLE_API_KEY||GOOGLE_API_KEY.includes('SUA_API_KEY')){
-    // Fallback: ask for folder name manually
-    const name=prompt('Nome da pasta de destino no Drive (será criada se não existir):');
-    if(!name)return;
-    selectedFolder={id:null,name:name.trim(),path:name.trim(),manualName:true};
-    updateDestRow();updateExportBtn();
-    return;
+window.openDrivePicker = function() {
+  if (!driveToken) { showToast('⚠️ Conecte o Drive primeiro', 'err'); return; }
+  if (!GOOGLE_API_KEY || GOOGLE_API_KEY.includes('SUA_API_KEY')) {
+    const folderName = prompt('Nome da pasta de destino no Drive:');
+    if (!folderName) return;
+    selectedFolder = { id: null, name: folderName.trim(), path: folderName.trim(), manualName: true };
+    updateDestRow(); updateExportBtn(); return;
   }
-  if(!pickerApiLoaded){showToast('⏳ Aguarde, carregando seletor...','');setTimeout(openDrivePicker,1000);return}
-  const picker=new google.picker.PickerBuilder()
+  if (!pickerApiLoaded) { showToast('⏳ Carregando seletor...', ''); setTimeout(window.openDrivePicker, 1000); return; }
+  const picker = new google.picker.PickerBuilder()
     .addView(new google.picker.DocsView(google.picker.ViewId.FOLDERS)
-      .setIncludeFolders(true)
-      .setSelectFolderEnabled(true)
+      .setIncludeFolders(true).setSelectFolderEnabled(true)
       .setMimeTypes('application/vnd.google-apps.folder'))
     .setOAuthToken(driveToken)
     .setDeveloperKey(GOOGLE_API_KEY)
@@ -468,210 +492,234 @@ function openDrivePicker(){
     .setCallback(pickerCallback)
     .build();
   picker.setVisible(true);
-}
+};
 
-function pickerCallback(data){
-  if(data.action===google.picker.Action.PICKED){
-    const doc=data.docs[0];
-    selectedFolder={id:doc.id,name:doc.name,path:doc.name};
-    updateDestRow();updateExportBtn();
-    showToast('📁 Pasta selecionada: '+doc.name,'ok');
+function pickerCallback(data) {
+  if (data.action === google.picker.Action.PICKED) {
+    const doc = data.docs[0];
+    selectedFolder = { id: doc.id, name: doc.name, path: doc.name };
+    updateDestRow(); updateExportBtn();
+    showToast('📁 ' + doc.name, 'ok');
   }
 }
 
-function updateDestRow(){
-  const pathEl=document.getElementById('destPath');
-  const subEl=document.getElementById('destSub');
-  const changeEl=document.getElementById('destChange');
-  const row=document.getElementById('destRow');
-  if(selectedFolder){
-    pathEl.textContent=selectedFolder.path;
-    pathEl.classList.remove('dim');
-    subEl.textContent=driveToken?'Clique para mudar':'Reconecte o Drive';
-    changeEl.textContent='Mudar';
-    row.classList.add('selected');
-  }else if(driveToken){
-    pathEl.textContent='Toque para escolher pasta no Drive';
-    pathEl.classList.add('dim');
-    subEl.textContent='Nenhuma pasta selecionada';
-    changeEl.textContent='Escolher';
-    row.classList.remove('selected');
-  }else{
-    pathEl.textContent='Conecte o Drive primeiro';
-    pathEl.classList.add('dim');
-    subEl.textContent='Toque em "Conectar" na tela inicial';
-    changeEl.textContent='';
-    row.classList.remove('selected');
+function updateDestRow() {
+  const pathEl   = document.getElementById('destPath');
+  const subEl    = document.getElementById('destSub');
+  const changeEl = document.getElementById('destChange');
+  const row      = document.getElementById('destRow');
+  if (selectedFolder) {
+    pathEl.textContent = selectedFolder.path; pathEl.classList.remove('dim');
+    subEl.textContent = driveToken ? 'Toque para mudar' : 'Reconecte o Drive';
+    changeEl.textContent = 'Mudar'; row.classList.add('selected');
+  } else if (driveToken) {
+    pathEl.textContent = 'Toque para escolher pasta'; pathEl.classList.add('dim');
+    subEl.textContent = 'Nenhuma pasta selecionada'; changeEl.textContent = 'Escolher'; row.classList.remove('selected');
+  } else {
+    pathEl.textContent = 'Conecte o Drive primeiro'; pathEl.classList.add('dim');
+    subEl.textContent = 'Toque em "Conectar" na tela inicial'; changeEl.textContent = ''; row.classList.remove('selected');
   }
 }
 
-function updateExportBtn(){
-  const btn=document.getElementById('btnExport');
-  const icon=document.getElementById('btnExportIcon');
-  const label=document.getElementById('btnExportLabel');
-  const hasPages=pages.length>0;
-  if(driveToken&&selectedFolder){
-    btn.disabled=!hasPages;
-    icon.textContent='⬆️';
-    label.textContent='Salvar PDF no Drive';
-  }else{
-    btn.disabled=!hasPages;
-    icon.textContent='⬇️';
-    label.textContent='Baixar PDF';
+function updateExportBtn() {
+  const btn   = document.getElementById('btnExport');
+  const icon  = document.getElementById('btnExportIcon');
+  const label = document.getElementById('btnExportLabel');
+  const hasPages = pages.length > 0;
+  if (driveToken && selectedFolder) {
+    btn.disabled = !hasPages; icon.textContent = '⬆️'; label.textContent = 'Salvar PDF no Drive';
+  } else {
+    btn.disabled = !hasPages; icon.textContent = '⬇️'; label.textContent = 'Baixar PDF';
   }
 }
 
-// ── Drive upload ──────────────────────────────────────────────────────────────
-async function driveRequest(url,method='GET',body=null){
-  const opts={method,headers:{Authorization:'Bearer '+driveToken}};
-  if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body)}
-  const r=await fetch(url,opts);
-  if(!r.ok)throw new Error('Drive API '+r.status+': '+await r.text());
-  return r.json();
+// ── Drive API ─────────────────────────────────────────────────────────────────
+async function driveRequest(url, method, body) {
+  method = method || 'GET';
+  const opts = { method, headers: { Authorization: 'Bearer ' + driveToken } };
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error('Drive API ' + res.status + ': ' + await res.text());
+  return res.json();
 }
 
-async function resolveFolderId(){
-  if(selectedFolder.id)return selectedFolder.id;
-  // Manual name mode: find or create folder in root
-  const name=selectedFolder.name;
-  const q=`name='${name}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
-  const res=await driveRequest('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)');
-  if(res.files&&res.files.length>0)return res.files[0].id;
-  const created=await driveRequest('https://www.googleapis.com/drive/v3/files','POST',{name,mimeType:'application/vnd.google-apps.folder',parents:['root']});
-  selectedFolder.id=created.id;
+async function resolveFolderId() {
+  if (selectedFolder.id) return selectedFolder.id;
+  const folderName = selectedFolder.name;
+  const q = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+  const res = await driveRequest('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name)');
+  if (res.files && res.files.length > 0) return res.files[0].id;
+  const created = await driveRequest('https://www.googleapis.com/drive/v3/files', 'POST', { name: folderName, mimeType: 'application/vnd.google-apps.folder', parents: ['root'] });
+  selectedFolder.id = created.id;
   return created.id;
 }
 
-async function uploadFileToDrive(blob,filename,folderId){
-  const meta={name:filename,parents:[folderId],mimeType:'application/pdf'};
-  const form=new FormData();
-  form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
-  form.append('file',blob,filename);
-  const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:'Bearer '+driveToken},body:form});
-  if(!r.ok)throw new Error('Upload failed '+r.status);
-  return r.json();
+async function uploadFileToDrive(blob, filename, folderId) {
+  const meta = { name: filename, parents: [folderId], mimeType: 'application/pdf' };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', blob, filename);
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', { method: 'POST', headers: { Authorization: 'Bearer ' + driveToken }, body: form });
+  if (!res.ok) throw new Error('Upload failed ' + res.status);
+  return res.json();
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
-function buildFilename(){
-  const base=(document.getElementById('pdfName').value||'documento').trim().replace(/[^\w\s\-]/g,'').replace(/\s+/g,'_')||'documento';
-  const date=new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
-  return base+'_'+date+'.pdf';
+function buildFilename() {
+  const base = (document.getElementById('pdfName').value || 'documento').trim().replace(/[^\w\s\-]/g,'').replace(/\s+/g,'_') || 'documento';
+  const date = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  return base + '_' + date + '.pdf';
 }
 
-async function doExport(){
-  if(!driveToken||!selectedFolder){exportLocal();return}
-  const filename=buildFilename();
-  showSheet(true);
-  try{
-    // Step 1: build PDF
-    setStep(1,'active','⏳','Processando '+pages.length+' página(s)...');
-    showProg(true);
-    const pdf=await buildPDF();
-    const blob=pdf.output('blob');
-    showProg(false);
-    setStep(1,'done','✅',filename);
-    // Step 2: upload
-    setStep(2,'active','⏳','Enviando '+(blob.size/1024).toFixed(0)+' KB para "'+selectedFolder.name+'"...');
-    const folderId=await resolveFolderId();
-    const result=await uploadFileToDrive(blob,filename,folderId);
-    setStep(2,'done','✅','Salvo em: '+selectedFolder.path);
-    document.getElementById('sheetTitle').textContent='✅ Salvo no Drive!';
-    document.getElementById('sheetSub').textContent=selectedFolder.path+' / '+filename;
-    document.getElementById('uploadDoneBtn').style.display='block';
-    showToast('☁️ PDF salvo no Drive!','ok');
-  }catch(e){
-    showProg(false);
-    if(e.message&&e.message.includes('401')){driveToken=null;updateDriveCard(false);showToast('⚠️ Sessão expirada — reconecte','err')}
-    else showToast('❌ Erro: '+(e.message||''),'err');
-    setStep(2,'err','❌',e.message||'Falha no envio');
-    document.getElementById('uploadDoneBtn').style.display='block';
-    document.getElementById('uploadDoneBtn').textContent='✕ Fechar';
-  }
-}
-
-async function exportLocal(){
-  showProg(true);
-  try{const pdf=await buildPDF();pdf.save(buildFilename());showToast('⬇️ PDF baixado!','ok')}
-  catch(e){showToast('❌ Erro ao gerar PDF','err')}
-  showProg(false);
-}
-
-async function buildPDF(){
-  const sorted=[...pages].sort((a,b)=>a.id-b.id);
-  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
-  for(let i=0;i<sorted.length;i++){
-    setProg((i+1)/sorted.length,'Pág. '+(i+1)+'/'+sorted.length);
-    if(i>0)pdf.addPage();
-    await new Promise(res=>{const img=new Image();img.onload=()=>{const ir=img.width/img.height,pr=pw/ph;let iw,ih,ix,iy;if(ir>pr){iw=pw;ih=pw/ir;ix=0;iy=(ph-ih)/2}else{ih=ph;iw=ph*ir;ix=(pw-iw)/2;iy=0}pdf.addImage(sorted[i].dataURL,'JPEG',ix,iy,iw,ih,'','FAST');res()};img.src=sorted[i].dataURL});
-    await new Promise(r=>setTimeout(r,25));
+async function buildPDF() {
+  const sorted = [...pages].sort((a,b) => a.id - b.id);
+  const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
+  for (let pi = 0; pi < sorted.length; pi++) {
+    setProg((pi+1)/sorted.length, 'Pág. '+(pi+1)+'/'+sorted.length);
+    if (pi > 0) pdf.addPage();
+    await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const ir = img.width/img.height, pr = pw/ph;
+        let iw,ih,ix,iy;
+        if (ir > pr) { iw=pw; ih=pw/ir; ix=0; iy=(ph-ih)/2; }
+        else         { ih=ph; iw=ph*ir; ix=(pw-iw)/2; iy=0; }
+        pdf.addImage(sorted[pi].dataURL,'JPEG',ix,iy,iw,ih,'','FAST');
+        resolve();
+      };
+      img.src = sorted[pi].dataURL;
+    });
+    await new Promise(r => setTimeout(r, 25));
   }
   return pdf;
 }
 
+window.doExport = async function() {
+  if (!driveToken || !selectedFolder) { await exportLocal(); return; }
+  const filename = buildFilename();
+  showSheet(true);
+  try {
+    setStep(1,'active','⏳','Processando '+pages.length+' página(s)...');
+    showProg(true);
+    const pdf  = await buildPDF();
+    const blob = pdf.output('blob');
+    showProg(false);
+    setStep(1,'done','✅', filename);
+    setStep(2,'active','⏳','Enviando '+(blob.size/1024).toFixed(0)+' KB para "'+selectedFolder.name+'"...');
+    const folderId = await resolveFolderId();
+    await uploadFileToDrive(blob, filename, folderId);
+    setStep(2,'done','✅','Salvo em: '+selectedFolder.path);
+    document.getElementById('sheetTitle').textContent = '✅ Salvo no Drive!';
+    document.getElementById('sheetSub').textContent   = selectedFolder.path + ' / ' + filename;
+    document.getElementById('uploadDoneBtn').style.display = 'block';
+    showToast('☁️ PDF salvo no Drive!', 'ok');
+  } catch(err) {
+    showProg(false);
+    if (err.message && err.message.includes('401')) { driveToken=null; updateDriveCard(false); showToast('⚠️ Sessão expirada — reconecte','err'); }
+    else showToast('❌ Erro: '+(err.message||''),'err');
+    setStep(2,'err','❌', err.message||'Falha');
+    document.getElementById('uploadDoneBtn').style.display = 'block';
+    document.getElementById('uploadDoneBtn').textContent   = '✕ Fechar';
+  }
+};
+
+window.exportLocal = async function() {
+  showProg(true);
+  try { const pdf = await buildPDF(); pdf.save(buildFilename()); showToast('⬇️ PDF baixado!','ok'); }
+  catch(e) { showToast('❌ Erro ao gerar PDF','err'); }
+  showProg(false);
+};
+
 // ── Upload sheet ──────────────────────────────────────────────────────────────
-function showSheet(show){
-  const el=document.getElementById('uploadSheet');el.classList.toggle('show',show);
-  if(show){
-    setStep(1,'','⏸','Aguardando...');setStep(2,'','⏸','Aguardando...');
-    document.getElementById('uploadDoneBtn').style.display='none';
-    document.getElementById('sheetTitle').textContent='Enviando para o Drive';
-    document.getElementById('sheetSub').textContent='Aguarde...';
+function showSheet(show) {
+  document.getElementById('uploadSheet').classList.toggle('show', show);
+  if (show) {
+    setStep(1,'','⏸','Aguardando...'); setStep(2,'','⏸','Aguardando...');
+    document.getElementById('uploadDoneBtn').style.display = 'none';
+    document.getElementById('sheetTitle').textContent = 'Enviando para o Drive';
+    document.getElementById('sheetSub').textContent   = 'Aguarde...';
   }
 }
-function closeSheet(){document.getElementById('uploadSheet').classList.remove('show')}
-function setStep(n,state,icon,detail){
-  document.getElementById('step'+n+'Icon').className='step-icon'+(state?' '+state:'');
-  document.getElementById('step'+n+'Check').textContent=icon;
-  document.getElementById('step'+n+'Detail').textContent=detail;
+window.closeSheet = function() { document.getElementById('uploadSheet').classList.remove('show'); };
+
+function setStep(n, state, icon, detail) {
+  document.getElementById('step'+n+'Icon').className = 'step-icon' + (state ? ' '+state : '');
+  document.getElementById('step'+n+'Check').textContent = icon;
+  document.getElementById('step'+n+'Detail').textContent = detail;
 }
 
-// ── Progress ──────────────────────────────────────────────────────────────────
-function showProg(show){document.getElementById('progOverlay').classList.toggle('show',show)}
-function setProg(p,lbl){document.getElementById('progFill').style.strokeDashoffset=213.6*(1-p);document.getElementById('progPct').textContent=Math.round(p*100)+'%';document.getElementById('progLbl').textContent=lbl}
+// ── Progress overlay ──────────────────────────────────────────────────────────
+function showProg(show) { document.getElementById('progOverlay').classList.toggle('show', show); }
+function setProg(p, lbl) {
+  document.getElementById('progFill').style.strokeDashoffset = 213.6*(1-p);
+  document.getElementById('progPct').textContent  = Math.round(p*100)+'%';
+  document.getElementById('progLbl').textContent  = lbl;
+}
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-let toastTimer;
+// ── Camera ────────────────────────────────────────────────────────────────────
+async function startCamera() {
+  document.getElementById('camBlocked').style.display = 'none';
+  setCamStatus('', 'Iniciando câmera...');
+  const constraints = [
+    { video: { facingMode: { ideal: facingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+    { video: { facingMode }, audio: false },
+    { video: true, audio: false }
+  ];
+  let ok = false;
+  for (const c of constraints) {
+    try { stream = await navigator.mediaDevices.getUserMedia(c); ok = true; break; } catch(e) {}
+  }
+  if (!ok) { showCamBlocked(); return; }
+  video.srcObject = stream;
+  try { await video.play(); } catch(e) {}
+  detecting = true;
+  setCamStatus('on', 'Pronto — aponte para um documento');
+  requestAnimationFrame(processFrame);
+  showToast('📷 Câmera ativa', 'ok');
+}
+
+function showCamBlocked(err) {
+  document.getElementById('camBlocked').style.display = 'flex';
+  if (!err) return;
+  const title = document.getElementById('blockedTitle');
+  const msg   = document.getElementById('blockedMsg');
+  if (err.name === 'NotAllowedError') { title.textContent='🚫 Permissão negada'; msg.textContent='Permita o acesso à câmera nas configurações do navegador.'; }
+  else if (location.protocol === 'file:') { title.textContent='⚠️ Protocolo incorreto'; msg.textContent='Abra via HTTPS usando o servidor.py incluído.'; }
+  else { title.textContent='❌ Erro'; msg.textContent=err.message||'Erro desconhecido.'; }
+}
+
+window.retryCamera = async function() { document.getElementById('camBlocked').style.display='none'; await startCamera(); };
+
+window.switchCamera = async function() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  detecting = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  prevGray = null; stableFrames = 0; smoothCorners = null;
+  await startCamera();
+};
+
 function setCamStatus(type, text) {
   document.getElementById('camStatusTxt').textContent = text;
-  const d = document.getElementById('camDot');
-  d.className = 'cam-dot' + (type ? ' ' + type : '');
+  const dot = document.getElementById('camDot');
+  dot.className = 'cam-dot' + (type ? ' '+type : '');
 }
 
 // ── Frame processing ──────────────────────────────────────────────────────────
-
-// Smoothed corner state for animation (screen coords)
-let smoothCorners = null;
-// Downscale factor for contour detection (performance)
-const DET_SCALE = 0.25;
-// Tiny canvas for detection at low res
-const detCvs = document.createElement('canvas');
-const detCtx = detCvs.getContext('2d', { willReadFrequently: true });
-// Frame skip counter (run detection every N frames)
-let frameSkip = 0;
-let lastCorners = null;   // VIDEO-space corners for crop
-let lastOverlayCorners = null; // OVERLAY-space corners for drawing
-
 function processFrame() {
   if (!detecting || !stream) return;
   const vw = video.videoWidth, vh = video.videoHeight;
   if (!vw || !vh) { requestAnimationFrame(processFrame); return; }
 
   cvs.width = vw; cvs.height = vh;
-  ovCvs.width = ovCvs.parentElement.clientWidth;
+  ovCvs.width  = ovCvs.parentElement.clientWidth;
   ovCvs.height = ovCvs.parentElement.clientHeight;
   octx.clearRect(0, 0, ovCvs.width, ovCvs.height);
   ctx.drawImage(video, 0, 0, vw, vh);
 
-  // Run contour detection every 3rd frame for perf
   frameSkip++;
-  if (frameSkip >= 3) {
-    frameSkip = 0;
-    lastOverlayCorners = findDocumentCorners(vw, vh);
-  }
+  if (frameSkip >= 3) { frameSkip = 0; lastOverlayCorners = findDocumentCorners(vw, vh); }
 
-  // Smooth corners toward detected position
   if (lastOverlayCorners) {
     smoothCorners = smoothCorners
       ? lerpCorners(smoothCorners, lastOverlayCorners, 0.18)
@@ -686,22 +734,20 @@ function processFrame() {
 
   if (capMode === 'auto') {
     const motion = detectMotion(vw, vh);
-    if (motion < 7 && docFound) stableFrames = Math.min(stableFrames + 1, STABLE_TARGET);
-    else stableFrames = Math.max(0, stableFrames - 3);
+    if (motion < 7 && docFound) stableFrames = Math.min(stableFrames+1, STABLE_TARGET);
+    else                        stableFrames = Math.max(0, stableFrames-3);
 
     const prog = stableFrames / STABLE_TARGET;
-    document.getElementById('autoFill').style.width = (prog * 100) + '%';
-    document.getElementById('shutterOuter').classList.toggle('armed', stableFrames > STABLE_TARGET * .5);
-
+    document.getElementById('autoFill').style.width = (prog*100)+'%';
+    document.getElementById('shutterOuter').classList.toggle('armed', stableFrames > STABLE_TARGET*.5);
     drawContourOverlay(smoothCorners, prog, docFound);
 
-    if (stableFrames >= STABLE_TARGET && Date.now() - lastCapture > COOLDOWN) {
+    if (stableFrames >= STABLE_TARGET && Date.now()-lastCapture > COOLDOWN) {
       captureFrame(); stableFrames = 0; lastCapture = Date.now();
     }
-
-    if (!docFound) setCamStatus('on', 'Aponte para o documento…');
-    else if (prog > .6) setCamStatus('on', `Estabilizando ${Math.round(prog*100)}%…`);
-    else setCamStatus('on', 'Documento detectado — mantenha firme');
+    if (!docFound)       setCamStatus('on', 'Aponte para o documento…');
+    else if (prog > .6)  setCamStatus('on', 'Estabilizando '+Math.round(prog*100)+'%…');
+    else                 setCamStatus('on', 'Documento detectado — mantenha firme');
   } else {
     drawContourOverlay(smoothCorners, 0, docFound);
   }
@@ -709,22 +755,7 @@ function processFrame() {
   requestAnimationFrame(processFrame);
 }
 
-// ── Document corner detection (pure JS, no OpenCV) ────────────────────────────
-// ── Document detection — brightness-based (finds the white paper) ─────────────
-//
-// Strategy:
-//  1. Downscale frame for speed
-//  2. For each pixel compute luminance
-//  3. Threshold to create a binary "bright mask" (paper = bright, background = dark)
-//  4. Erode mask to remove noise
-//  5. Find the largest connected bright region (the document)
-//  6. Compute its axis-aligned bounding box → 4 corners
-//  7. Refine each edge by scanning inward from that bbox for the sharpest
-//     brightness transition → sub-pixel accurate edge lines
-//
-// Works well when document is lighter than background (typical scan scenario).
-// Falls back gracefully when no bright rectangle is found.
-
+// ── Document corner detection — brightness-based ──────────────────────────────
 function findDocumentCorners(vw, vh) {
   const dw = Math.round(vw * DET_SCALE);
   const dh = Math.round(vh * DET_SCALE);
@@ -732,686 +763,342 @@ function findDocumentCorners(vw, vh) {
   detCtx.drawImage(video, 0, 0, dw, dh);
   const imgData = detCtx.getImageData(0, 0, dw, dh);
 
-  // 1. Build luminance map
+  // Build luminance map
   const lum = new Uint8Array(dw * dh);
-  const d = imgData.data;
+  const px  = imgData.data;
   for (let i = 0; i < lum.length; i++)
-    lum[i] = (d[i*4]*.299 + d[i*4+1]*.587 + d[i*4+2]*.114) | 0;
+    lum[i] = (px[i*4]*.299 + px[i*4+1]*.587 + px[i*4+2]*.114)|0;
 
-  // 2. Auto-threshold: pixels above (mean + k*std) are "bright"
+  // Auto-threshold: mean + k*std
   let sum = 0;
   for (let i = 0; i < lum.length; i++) sum += lum[i];
   const mean = sum / lum.length;
   let variance = 0;
   for (let i = 0; i < lum.length; i++) variance += (lum[i]-mean)**2;
   const std = Math.sqrt(variance / lum.length);
-  // Document paper is typically well above average; tune k here (1.0–1.8)
   const BRIGHT_THRESH = Math.min(200, mean + std * 1.1);
 
-  // 3. Binary bright mask
+  // Binary bright mask
   const mask = new Uint8Array(dw * dh);
-  for (let i = 0; i < lum.length; i++)
-    mask[i] = lum[i] >= BRIGHT_THRESH ? 1 : 0;
+  for (let i = 0; i < lum.length; i++) mask[i] = lum[i] >= BRIGHT_THRESH ? 1 : 0;
 
-  // 4. Erode 2px to remove isolated noise
+  // Erode 2px to remove noise
   const eroded = erodeMask(mask, dw, dh, 2);
 
-  // 5. Find bounding box of the largest bright blob via scanline
+  // Bounding box of largest bright region
   const bbox = brightBBox(eroded, dw, dh);
   if (!bbox) { lastCorners = null; lastOverlayCorners = null; return null; }
 
-  const { x0, y0, x1, y1 } = bbox;
+  const { bx0, by0, bx1, by1 } = bbox;
+  if ((bx1-bx0) < dw*.25 || (by1-by0) < dh*.25) { lastCorners = null; lastOverlayCorners = null; return null; }
 
-  // Reject if too small (< 25% of frame in each axis)
-  if ((x1-x0) < dw*0.25 || (y1-y0) < dh*0.25) {
-    lastCorners = null; lastOverlayCorners = null; return null;
-  }
+  // Refine edges
+  const TOP    = refineEdge(lum, dw, dh, 'top',    by0, bx0, bx1);
+  const BOTTOM = refineEdge(lum, dw, dh, 'bottom', by1, bx0, bx1);
+  const LEFT   = refineEdge(lum, dw, dh, 'left',   bx0, by0, by1);
+  const RIGHT  = refineEdge(lum, dw, dh, 'right',  bx1, by0, by1);
 
-  // 6. Refine each edge: scan from bbox boundary inward, find steepest lum drop
-  const TOP    = refineEdge(lum, dw, dh, 'top',    y0, x0, x1);
-  const BOTTOM = refineEdge(lum, dw, dh, 'bottom', y1, x0, x1);
-  const LEFT   = refineEdge(lum, dw, dh, 'left',   x0, y0, y1);
-  const RIGHT  = refineEdge(lum, dw, dh, 'right',  x1, y0, y1);
+  const raw = [[LEFT,TOP],[RIGHT,TOP],[RIGHT,BOTTOM],[LEFT,BOTTOM]];
 
-  // Raw corners in detection-canvas space: TL, TR, BR, BL
-  const rawCorners = [
-    [LEFT,  TOP],
-    [RIGHT, TOP],
-    [RIGHT, BOTTOM],
-    [LEFT,  BOTTOM],
-  ];
+  // Store video-space corners for crop
+  const vsx = vw/dw, vsy = vh/dh;
+  lastCorners = raw.map(([x,y]) => [x*vsx, y*vsy]);
 
-  // 7. Store VIDEO-space corners for crop
-  const vidSx = vw / dw, vidSy = vh / dh;
-  lastCorners = rawCorners.map(([x, y]) => [x * vidSx, y * vidSy]);
-
-  // Return OVERLAY-space corners for drawing
-  const ovSx = ovCvs.width / dw, ovSy = ovCvs.height / dh;
-  lastOverlayCorners = rawCorners.map(([x, y]) => [x * ovSx, y * ovSy]);
+  // Return overlay-space corners for drawing
+  const osx = ovCvs.width/dw, osy = ovCvs.height/dh;
+  lastOverlayCorners = raw.map(([x,y]) => [x*osx, y*osy]);
   return lastOverlayCorners;
 }
 
-// Erode binary mask by `r` pixels (removes thin noise at edges)
 function erodeMask(mask, w, h, r) {
   const out = new Uint8Array(w * h);
-  for (let y = r; y < h-r; y++) {
-    for (let x = r; x < w-r; x++) {
+  for (let ey = r; ey < h-r; ey++) {
+    for (let ex = r; ex < w-r; ex++) {
       let ok = 1;
       outer: for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) {
-          if (!mask[(y+dy)*w+(x+dx)]) { ok = 0; break outer; }
+          if (!mask[(ey+dy)*w+(ex+dx)]) { ok = 0; break outer; }
         }
       }
-      out[y*w+x] = ok;
+      out[ey*w+ex] = ok;
     }
   }
   return out;
 }
 
-// Find bounding box of the largest contiguous bright region
-// Uses a fast scanline approach: finds the densest bright band per row/col
 function brightBBox(mask, w, h) {
-  // Row density: how many bright pixels in each row
   const rowDen = new Float32Array(h);
   const colDen = new Float32Array(w);
   let total = 0;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (mask[y*w+x]) { rowDen[y]++; colDen[x]++; total++; }
-    }
-  }
-  if (total < w*h*0.04) return null; // less than 4% bright → no doc
-
-  // Find the contiguous row band with highest average density
-  const MIN_RUN = Math.round(h * 0.2);
-  const y0 = findDenseEdge(rowDen, h, 'start', MIN_RUN);
-  const y1 = findDenseEdge(rowDen, h, 'end',   MIN_RUN);
-  const x0 = findDenseEdge(colDen, w, 'start', Math.round(w*0.2));
-  const x1 = findDenseEdge(colDen, w, 'end',   Math.round(w*0.2));
-
-  if (x0 < 0 || y0 < 0 || x1 <= x0 || y1 <= y0) return null;
-  return { x0, y0, x1, y1 };
+  for (let by = 0; by < h; by++) for (let bx = 0; bx < w; bx++) { if(mask[by*w+bx]){rowDen[by]++;colDen[bx]++;total++;} }
+  if (total < w*h*0.04) return null;
+  const bx0 = findDenseEdge(colDen, w, 'start', Math.round(w*.2));
+  const bx1 = findDenseEdge(colDen, w, 'end',   Math.round(w*.2));
+  const by0 = findDenseEdge(rowDen, h, 'start', Math.round(h*.2));
+  const by1 = findDenseEdge(rowDen, h, 'end',   Math.round(h*.2));
+  if (bx0 < 0 || by0 < 0 || bx1 <= bx0 || by1 <= by0) return null;
+  return { bx0, by0, bx1, by1 };
 }
 
-// Find the first (start) or last (end) position where density is above threshold
 function findDenseEdge(den, len, dir, minRun) {
-  const MARGIN = Math.round(len * 0.04);
-  // Smooth density
+  const MARGIN = Math.round(len * .04);
   const sm = new Float32Array(len);
   const R = 4;
-  for (let i = 0; i < len; i++) {
+  for (let fi = 0; fi < len; fi++) {
     let s = 0, c = 0;
-    for (let k = -R; k <= R; k++) {
-      const j = i+k;
-      if (j >= 0 && j < len) { s += den[j]; c++; }
-    }
-    sm[i] = s/c;
+    for (let k = -R; k <= R; k++) { const j=fi+k; if(j>=0&&j<len){s+=den[j];c++;} }
+    sm[fi] = s/c;
   }
-  // Global max to compute relative threshold
   let maxVal = 0;
-  for (let i = MARGIN; i < len-MARGIN; i++) if (sm[i] > maxVal) maxVal = sm[i];
+  for (let fi = MARGIN; fi < len-MARGIN; fi++) if (sm[fi] > maxVal) maxVal = sm[fi];
   if (maxVal < 1) return -1;
-  const thresh = maxVal * 0.35; // edge = where density drops below 35% of peak
-
-  if (dir === 'start') {
-    for (let i = MARGIN; i < len-MARGIN; i++)
-      if (sm[i] >= thresh) return i;
-  } else {
-    for (let i = len-MARGIN-1; i >= MARGIN; i--)
-      if (sm[i] >= thresh) return i;
-  }
+  const thresh = maxVal * .35;
+  if (dir === 'start') { for (let fi=MARGIN;fi<len-MARGIN;fi++) if(sm[fi]>=thresh) return fi; }
+  else                 { for (let fi=len-MARGIN-1;fi>=MARGIN;fi--) if(sm[fi]>=thresh) return fi; }
   return -1;
 }
 
-// Refine a single edge by finding the steepest luminance gradient
-// along the perpendicular direction from the rough bbox boundary
 function refineEdge(lum, w, h, edge, roughPos, rangeStart, rangeEnd) {
-  const SCAN = 18; // pixels to scan inward from rough position
-  const STEP = 4;  // sample every N pixels along the edge for speed
-
-  let bestPos = roughPos;
-  let bestGrad = -1;
-
+  const SCAN = 18, STEP = 4;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
+  let bestPos = roughPos, bestGrad = -1;
   if (edge === 'top') {
-    const scanEnd = clamp(roughPos + SCAN, 0, h-2);
-    for (let y = clamp(roughPos - SCAN, 1, h-2); y < scanEnd; y++) {
-      let grad = 0; let count = 0;
-      for (let x = rangeStart; x < rangeEnd; x += STEP) {
-        grad += Math.abs(lum[y*w+x] - lum[(y-1)*w+x]);
-        count++;
-      }
-      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = y; }
+    for (let ry=clamp(roughPos-SCAN,1,h-2); ry<clamp(roughPos+SCAN,0,h-2); ry++) {
+      let grad=0,cnt=0; for(let rx=rangeStart;rx<rangeEnd;rx+=STEP){grad+=Math.abs(lum[ry*w+rx]-lum[(ry-1)*w+rx]);cnt++;}
+      if(cnt>0&&grad/cnt>bestGrad){bestGrad=grad/cnt;bestPos=ry;}
     }
   } else if (edge === 'bottom') {
-    const scanStart = clamp(roughPos - SCAN, 1, h-2);
-    for (let y = clamp(roughPos + SCAN, 1, h-2); y >= scanStart; y--) {
-      let grad = 0; let count = 0;
-      for (let x = rangeStart; x < rangeEnd; x += STEP) {
-        grad += Math.abs(lum[y*w+x] - lum[(y+1)*w+x]);
-        count++;
-      }
-      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = y; }
+    for (let ry=clamp(roughPos+SCAN,1,h-2); ry>=clamp(roughPos-SCAN,1,h-2); ry--) {
+      let grad=0,cnt=0; for(let rx=rangeStart;rx<rangeEnd;rx+=STEP){grad+=Math.abs(lum[ry*w+rx]-lum[(ry+1)*w+rx]);cnt++;}
+      if(cnt>0&&grad/cnt>bestGrad){bestGrad=grad/cnt;bestPos=ry;}
     }
   } else if (edge === 'left') {
-    const scanEnd = clamp(roughPos + SCAN, 0, w-2);
-    for (let x = clamp(roughPos - SCAN, 1, w-2); x < scanEnd; x++) {
-      let grad = 0; let count = 0;
-      for (let y = rangeStart; y < rangeEnd; y += STEP) {
-        grad += Math.abs(lum[y*w+x] - lum[y*w+(x-1)]);
-        count++;
-      }
-      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = x; }
+    for (let rx=clamp(roughPos-SCAN,1,w-2); rx<clamp(roughPos+SCAN,0,w-2); rx++) {
+      let grad=0,cnt=0; for(let ry=rangeStart;ry<rangeEnd;ry+=STEP){grad+=Math.abs(lum[ry*w+rx]-lum[ry*w+(rx-1)]);cnt++;}
+      if(cnt>0&&grad/cnt>bestGrad){bestGrad=grad/cnt;bestPos=rx;}
     }
-  } else { // right
-    const scanStart = clamp(roughPos - SCAN, 1, w-2);
-    for (let x = clamp(roughPos + SCAN, 1, w-2); x >= scanStart; x--) {
-      let grad = 0; let count = 0;
-      for (let y = rangeStart; y < rangeEnd; y += STEP) {
-        grad += Math.abs(lum[y*w+x] - lum[y*w+(x+1)]);
-        count++;
-      }
-      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = x; }
+  } else {
+    for (let rx=clamp(roughPos+SCAN,1,w-2); rx>=clamp(roughPos-SCAN,1,w-2); rx--) {
+      let grad=0,cnt=0; for(let ry=rangeStart;ry<rangeEnd;ry+=STEP){grad+=Math.abs(lum[ry*w+rx]-lum[ry*w+(rx+1)]);cnt++;}
+      if(cnt>0&&grad/cnt>bestGrad){bestGrad=grad/cnt;bestPos=rx;}
     }
   }
   return bestPos;
 }
 
-// (toGrayscale kept for motion detection compatibility)
-function toGrayscale(data, w, h) {
-  const g = new Uint8Array(w * h);
-  for (let i = 0; i < g.length; i++)
-    g[i] = (data[i*4]*.299 + data[i*4+1]*.587 + data[i*4+2]*.114)|0;
-  return g;
-}
-
 // ── Motion detection ──────────────────────────────────────────────────────────
 function detectMotion(vw, vh) {
-  const d = ctx.getImageData(vw/4|0, vh/4|0, vw/2|0, vh/2|0).data;
-  const g = new Uint8Array(d.length / 4);
-  for (let i = 0; i < g.length; i++) g[i] = (d[i*4]*.299 + d[i*4+1]*.587 + d[i*4+2]*.114)|0;
+  const px2 = ctx.getImageData(vw/4|0, vh/4|0, vw/2|0, vh/2|0).data;
+  const gray = new Uint8Array(px2.length/4);
+  for (let mi = 0; mi < gray.length; mi++) gray[mi] = (px2[mi*4]*.299+px2[mi*4+1]*.587+px2[mi*4+2]*.114)|0;
   let diff = 0;
-  if (prevGray && prevGray.length === g.length) {
-    const step = Math.max(1, g.length/2000|0); let c = 0;
-    for (let i = 0; i < g.length; i += step) { diff += Math.abs(g[i] - prevGray[i]); c++; }
-    diff /= c;
+  if (prevGray && prevGray.length === gray.length) {
+    const step = Math.max(1, gray.length/2000|0); let cnt = 0;
+    for (let mi = 0; mi < gray.length; mi += step) { diff += Math.abs(gray[mi]-prevGray[mi]); cnt++; }
+    diff /= cnt;
   }
-  prevGray = g; return diff;
-}
-
-// ── Corner smoothing helpers ──────────────────────────────────────────────────
-function lerpCorners(a, b, t) {
-  return a.map(([ax, ay], i) => [
-    ax + (b[i][0]-ax)*t,
-    ay + (b[i][1]-ay)*t
-  ]);
-}
-
-function defaultCorners(w, h) {
-  const m = Math.min(w, h) * 0.1;
-  return [[m,m],[w-m,m],[w-m,h-m],[m,h-m]];
+  prevGray = gray; return diff;
 }
 
 // ── Overlay drawing ───────────────────────────────────────────────────────────
-function drawContourOverlay(corners, stabilityProg, docFound) {
-  if (!corners) return;
-  const [tl, tr, br, bl] = corners;
+function lerpCorners(a, b, t) { return a.map(([ax,ay],i) => [ax+(b[i][0]-ax)*t, ay+(b[i][1]-ay)*t]); }
+function defaultCorners(w, h) { const m=Math.min(w,h)*.1; return [[m,m],[w-m,m],[w-m,h-m],[m,h-m]]; }
 
-  // Color logic
-  const found = docFound;
-  const stable = stabilityProg > 0.5;
-  const edgeAlpha = found ? (stable ? 0.9 : 0.55) : 0.25;
-  const edgeColor = found
-    ? (stable ? `rgba(10,240,160,${edgeAlpha})` : `rgba(255,200,60,${edgeAlpha})`)
-    : `rgba(255,255,255,${edgeAlpha})`;
+function drawContourOverlay(corners, prog, docFound) {
+  if (!corners) return;
+  const [tl,tr,br,bl] = corners;
+  const stable = prog > .5;
+  const alpha  = docFound ? (stable ? .9 : .55) : .25;
+  const color  = docFound ? (stable ? `rgba(10,240,160,${alpha})` : `rgba(255,200,60,${alpha})`) : `rgba(255,255,255,${alpha})`;
 
   octx.save();
-
-  // Dim overlay outside document quad
+  // Dim outside
   octx.beginPath();
-  octx.rect(0, 0, ovCvs.width, ovCvs.height);
-  octx.moveTo(tl[0],tl[1]);
-  octx.lineTo(tr[0],tr[1]);
-  octx.lineTo(br[0],br[1]);
-  octx.lineTo(bl[0],bl[1]);
-  octx.closePath();
-  octx.fillStyle = 'rgba(0,0,0,0.35)';
-  octx.fill('evenodd');
+  octx.rect(0,0,ovCvs.width,ovCvs.height);
+  octx.moveTo(tl[0],tl[1]); octx.lineTo(tr[0],tr[1]); octx.lineTo(br[0],br[1]); octx.lineTo(bl[0],bl[1]);
+  octx.closePath(); octx.fillStyle='rgba(0,0,0,0.35)'; octx.fill('evenodd');
 
-  // Document outline
+  // Outline
   octx.beginPath();
-  octx.moveTo(tl[0],tl[1]);
-  octx.lineTo(tr[0],tr[1]);
-  octx.lineTo(br[0],br[1]);
-  octx.lineTo(bl[0],bl[1]);
+  octx.moveTo(tl[0],tl[1]); octx.lineTo(tr[0],tr[1]); octx.lineTo(br[0],br[1]); octx.lineTo(bl[0],bl[1]);
   octx.closePath();
-  octx.strokeStyle = edgeColor;
-  octx.lineWidth = 2 + stabilityProg * 2;
-  if (found && stable) {
-    octx.shadowColor = '#0af0a0';
-    octx.shadowBlur = 8 + stabilityProg * 10;
-  }
-  octx.stroke();
+  octx.strokeStyle = color; octx.lineWidth = 2+prog*2;
+  if (docFound && stable) { octx.shadowColor='#0af0a0'; octx.shadowBlur=8+prog*10; }
+  octx.stroke(); octx.shadowBlur=0;
 
-  octx.shadowBlur = 0;
-
-  // Corner dots with size pulse on stable
-  const CORNER_R = 7 + stabilityProg * 3;
-  [[tl,'tl'],[tr,'tr'],[br,'br'],[bl,'bl']].forEach(([[cx,cy]]) => {
-    // Outer ring
-    octx.beginPath();
-    octx.arc(cx, cy, CORNER_R + 4, 0, Math.PI*2);
-    octx.strokeStyle = found ? `rgba(10,240,160,0.25)` : `rgba(255,255,255,0.15)`;
-    octx.lineWidth = 1.5;
-    octx.stroke();
-
-    // Filled dot
-    octx.beginPath();
-    octx.arc(cx, cy, CORNER_R, 0, Math.PI*2);
-    octx.fillStyle = found
-      ? (stable ? '#0af0a0' : '#ffc840')
-      : 'rgba(255,255,255,0.6)';
-    octx.fill();
-
-    // Inner white center
-    octx.beginPath();
-    octx.arc(cx, cy, CORNER_R * 0.38, 0, Math.PI*2);
-    octx.fillStyle = 'rgba(255,255,255,0.85)';
-    octx.fill();
+  // Corner dots
+  const R = 7+prog*3;
+  [[tl],[tr],[br],[bl]].forEach(([[cx,cy]]) => {
+    octx.beginPath(); octx.arc(cx,cy,R+4,0,Math.PI*2);
+    octx.strokeStyle=docFound?'rgba(10,240,160,0.25)':'rgba(255,255,255,0.15)'; octx.lineWidth=1.5; octx.stroke();
+    octx.beginPath(); octx.arc(cx,cy,R,0,Math.PI*2);
+    octx.fillStyle=docFound?(stable?'#0af0a0':'#ffc840'):'rgba(255,255,255,0.6)'; octx.fill();
+    octx.beginPath(); octx.arc(cx,cy,R*.38,0,Math.PI*2); octx.fillStyle='rgba(255,255,255,0.85)'; octx.fill();
   });
 
-  // Corner L-brackets (visual polish)
+  // L-brackets
   const ARM = 22;
-  octx.strokeStyle = edgeColor;
-  octx.lineWidth = 3;
-  octx.lineCap = 'round';
-  [
-    [tl, [ 1, 0], [ 0, 1]],
-    [tr, [-1, 0], [ 0, 1]],
-    [br, [-1, 0], [ 0,-1]],
-    [bl, [ 1, 0], [ 0,-1]],
-  ].forEach(([[cx,cy],[dx1,dy1],[dx2,dy2]]) => {
-    octx.beginPath();
-    octx.moveTo(cx + dx1*ARM, cy + dy1*ARM);
-    octx.lineTo(cx, cy);
-    octx.lineTo(cx + dx2*ARM, cy + dy2*ARM);
-    octx.stroke();
+  octx.strokeStyle=color; octx.lineWidth=3; octx.lineCap='round';
+  [[tl,[1,0],[0,1]],[tr,[-1,0],[0,1]],[br,[-1,0],[0,-1]],[bl,[1,0],[0,-1]]].forEach(([[cx,cy],[d1x,d1y],[d2x,d2y]]) => {
+    octx.beginPath(); octx.moveTo(cx+d1x*ARM,cy+d1y*ARM); octx.lineTo(cx,cy); octx.lineTo(cx+d2x*ARM,cy+d2y*ARM); octx.stroke();
   });
 
-  // Stability arc around TL corner (progress indicator)
-  if (capMode === 'auto' && stabilityProg > 0) {
-    octx.beginPath();
-    octx.arc(tl[0], tl[1], CORNER_R + 9, -Math.PI/2, -Math.PI/2 + Math.PI*2*stabilityProg);
-    octx.strokeStyle = '#0af0a0';
-    octx.lineWidth = 2.5;
-    octx.shadowColor = '#0af0a0';
-    octx.shadowBlur = 6;
-    octx.stroke();
-    octx.shadowBlur = 0;
+  // Stability arc on TL
+  if (capMode === 'auto' && prog > 0) {
+    octx.beginPath(); octx.arc(tl[0],tl[1],R+9,-Math.PI/2,-Math.PI/2+Math.PI*2*prog);
+    octx.strokeStyle='#0af0a0'; octx.lineWidth=2.5; octx.shadowColor='#0af0a0'; octx.shadowBlur=6; octx.stroke(); octx.shadowBlur=0;
   }
-
   octx.restore();
 }
 
 // ── Capture ───────────────────────────────────────────────────────────────────
-function captureManual() { if (stream) captureFrame(); }
+window.captureManual = function() { if (stream) captureFrame(); };
 
 function captureFrame() {
   const vw = video.videoWidth, vh = video.videoHeight;
   if (!vw || !vh) return;
-
-  // Draw full frame to working canvas
   cvs.width = vw; cvs.height = vh;
   ctx.drawImage(video, 0, 0);
-
-  let dataURL;
-
-  // If we have detected corners, warp the document to a flat rectangle
-  if (lastCorners && lastCorners.length === 4) {
-    dataURL = perspectiveCrop(vw, vh);
-  } else {
-    // Fallback: save full frame
-    const raw = ctx.getImageData(0, 0, vw, vh);
-    ctx.putImageData(bwMode ? toBW(raw) : enhanceColor(raw), 0, 0);
-    dataURL = cvs.toDataURL('image/jpeg', .92);
-  }
-
-  pages.push({ id: Date.now(), dataURL, bw: bwMode, time: new Date().toLocaleTimeString('pt-BR') });
-  updateGallery();
-  flash();
-  showToast(`✅ Pág. ${pages.length} capturada`, 'ok');
+  const dataURL = (lastCorners && lastCorners.length === 4) ? perspectiveCrop(vw,vh) : fullFrameCapture(vw,vh);
+  pages.push({ id: Date.now(), dataURL, bw: bwMode });
+  updateGallery(); flash();
+  showToast('✅ Pág. '+pages.length+' capturada','ok');
   updatePageCounter();
 }
 
-/**
- * perspectiveCrop — maps the detected quad to a flat A4-proportioned canvas.
- *
- * VIDEO coords, then use a scanline-based inverse perspective transform
- * (pure JS, no GPU needed) to produce a clean top-down image.
- */
-function perspectiveCrop(vw, vh) {
-  // lastCorners are already in VIDEO space (set by findDocumentCorners)
-  // Order: TL, TR, BR, BL
-  const [tl, tr, br, bl] = lastCorners;
-
-  // Output dimensions: measure average width/height of quad
-  const wTop  = Math.hypot(tr[0]-tl[0], tr[1]-tl[1]);
-  const wBot  = Math.hypot(br[0]-bl[0], br[1]-bl[1]);
-  const hLeft = Math.hypot(bl[0]-tl[0], bl[1]-tl[1]);
-  const hRight= Math.hypot(br[0]-tr[0], br[1]-tr[1]);
-  const outW  = Math.round(Math.max(wTop, wBot));
-  const outH  = Math.round(Math.max(hLeft, hRight));
-
-  // Sanity: must be at least 200×200
-  if (outW < 200 || outH < 200) {
-    const raw = ctx.getImageData(0, 0, vw, vh);
-    ctx.putImageData(bwMode ? toBW(raw) : enhanceColor(raw), 0, 0);
-    return cvs.toDataURL('image/jpeg', .92);
-  }
-
-  // Read source pixels
-  const srcData = ctx.getImageData(0, 0, vw, vh).data;
-
-  // Create output canvas
-  const outCvs = document.createElement('canvas');
-  outCvs.width = outW; outCvs.height = outH;
-  const outCtx = outCvs.getContext('2d');
-  const outImg = outCtx.createImageData(outW, outH);
-  const dst = outImg.data;
-
-  // Inverse bilinear mapping: for each destination pixel (u,v) in [0,1]²
-  // compute the corresponding source pixel via bilinear interpolation of corners.
-  // This is the standard "four-point" inverse warp.
-  for (let dstY = 0; dstY < outH; dstY++) {
-    const v = dstY / (outH - 1);
-    for (let dstX = 0; dstX < outW; dstX++) {
-      const u = dstX / (outW - 1);
-
-      // Bilinear: P = (1-v)*[(1-u)*TL + u*TR] + v*[(1-u)*BL + u*BR]
-      const srcX = (1-v)*((1-u)*tl[0] + u*tr[0]) + v*((1-u)*bl[0] + u*br[0]);
-      const srcY = (1-v)*((1-u)*tl[1] + u*tr[1]) + v*((1-u)*bl[1] + u*br[1]);
-
-      // Bilinear sample from source
-      const x0 = srcX|0, y0 = srcY|0;
-      const x1 = Math.min(x0+1, vw-1), y1 = Math.min(y0+1, vh-1);
-      const fx = srcX - x0, fy = srcY - y0;
-
-      const i00 = (y0*vw + x0)*4;
-      const i10 = (y0*vw + x1)*4;
-      const i01 = (y1*vw + x0)*4;
-      const i11 = (y1*vw + x1)*4;
-
-      const di = (dstY*outW + dstX)*4;
-      for (let c = 0; c < 3; c++) {
-        dst[di+c] = (
-          srcData[i00+c]*(1-fx)*(1-fy) +
-          srcData[i10+c]*fx*(1-fy) +
-          srcData[i01+c]*(1-fx)*fy +
-          srcData[i11+c]*fx*fy
-        )|0;
-      }
-      dst[di+3] = 255;
-    }
-  }
-
-  // Apply enhancement
-  const enhanced = bwMode ? toBW(outImg) : enhanceColor(outImg);
-  outCtx.putImageData(enhanced, 0, 0);
-
-  // Auto-rotate if landscape (width > height → rotate 90° to portrait)
-  if (outW > outH) {
-    const rotCvs = document.createElement('canvas');
-    rotCvs.width = outH; rotCvs.height = outW;
-    const rotCtx = rotCvs.getContext('2d');
-    rotCtx.translate(rotCvs.width/2, rotCvs.height/2);
-    rotCtx.rotate(Math.PI/2);
-    rotCtx.drawImage(outCvs, -outW/2, -outH/2);
-    return rotCvs.toDataURL('image/jpeg', .92);
-  }
-
-  return outCvs.toDataURL('image/jpeg', .92);
+function fullFrameCapture(vw, vh) {
+  const raw = ctx.getImageData(0,0,vw,vh);
+  ctx.putImageData(bwMode ? toBW(raw) : enhanceColor(raw), 0, 0);
+  return cvs.toDataURL('image/jpeg',.92);
 }
 
-function flash() {
-  const f = document.getElementById('flashOverlay');
-  f.style.opacity = '1';
-  setTimeout(() => f.style.opacity = '0', 100);
+function perspectiveCrop(vw, vh) {
+  const [tl,tr,br,bl] = lastCorners;
+  const wTop  = Math.hypot(tr[0]-tl[0],tr[1]-tl[1]);
+  const wBot  = Math.hypot(br[0]-bl[0],br[1]-bl[1]);
+  const hLeft = Math.hypot(bl[0]-tl[0],bl[1]-tl[1]);
+  const hRight= Math.hypot(br[0]-tr[0],br[1]-tr[1]);
+  const outW  = Math.round(Math.max(wTop,wBot));
+  const outH  = Math.round(Math.max(hLeft,hRight));
+  if (outW<200||outH<200) return fullFrameCapture(vw,vh);
+
+  const srcData = ctx.getImageData(0,0,vw,vh).data;
+  const outCvs  = document.createElement('canvas');
+  outCvs.width=outW; outCvs.height=outH;
+  const outCtx  = outCvs.getContext('2d');
+  const outImg  = outCtx.createImageData(outW,outH);
+  const dst     = outImg.data;
+
+  for (let dy = 0; dy < outH; dy++) {
+    const v = dy/(outH-1);
+    for (let dx = 0; dx < outW; dx++) {
+      const u  = dx/(outW-1);
+      const sx = (1-v)*((1-u)*tl[0]+u*tr[0]) + v*((1-u)*bl[0]+u*br[0]);
+      const sy = (1-v)*((1-u)*tl[1]+u*tr[1]) + v*((1-u)*bl[1]+u*br[1]);
+      const x0 = sx|0, y0 = sy|0;
+      const x1 = Math.min(x0+1,vw-1), y1 = Math.min(y0+1,vh-1);
+      const fx = sx-x0, fy = sy-y0;
+      const i00=(y0*vw+x0)*4, i10=(y0*vw+x1)*4, i01=(y1*vw+x0)*4, i11=(y1*vw+x1)*4;
+      const di = (dy*outW+dx)*4;
+      for (let cc=0;cc<3;cc++) dst[di+cc]=(srcData[i00+cc]*(1-fx)*(1-fy)+srcData[i10+cc]*fx*(1-fy)+srcData[i01+cc]*(1-fx)*fy+srcData[i11+cc]*fx*fy)|0;
+      dst[di+3]=255;
+    }
+  }
+  const enhanced = bwMode ? toBW(outImg) : enhanceColor(outImg);
+  outCtx.putImageData(enhanced,0,0);
+  if (outW>outH) {
+    const rotCvs=document.createElement('canvas'); rotCvs.width=outH; rotCvs.height=outW;
+    const rotCtx=rotCvs.getContext('2d');
+    rotCtx.translate(rotCvs.width/2,rotCvs.height/2); rotCtx.rotate(Math.PI/2); rotCtx.drawImage(outCvs,-outW/2,-outH/2);
+    return rotCvs.toDataURL('image/jpeg',.92);
+  }
+  return outCvs.toDataURL('image/jpeg',.92);
 }
 
 // ── Image processing ──────────────────────────────────────────────────────────
 function toBW(id) {
-  const d = id.data; let mn=255, mx=0;
-  for (let i=0;i<d.length;i+=4) { const v=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0; if(v<mn)mn=v; if(v>mx)mx=v; }
-  const rng = mx-mn||1;
-  for (let i=0;i<d.length;i+=4) {
-    let v=((d[i]*.299+d[i+1]*.587+d[i+2]*.114)-mn)/rng;
-    v=v<.5?2*v*v:1-(-2*v+2)**2/2;
-    v=Math.min(255,Math.max(0,v*255*1.1))|0;
-    d[i]=d[i+1]=d[i+2]=v;
+  const pd=id.data; let mn=255,mx=0;
+  for(let ii=0;ii<pd.length;ii+=4){const vv=(pd[ii]*.299+pd[ii+1]*.587+pd[ii+2]*.114)|0;if(vv<mn)mn=vv;if(vv>mx)mx=vv;}
+  const rng=mx-mn||1;
+  for(let ii=0;ii<pd.length;ii+=4){
+    let vv=((pd[ii]*.299+pd[ii+1]*.587+pd[ii+2]*.114)-mn)/rng;
+    vv=vv<.5?2*vv*vv:1-(-2*vv+2)**2/2;
+    vv=Math.min(255,Math.max(0,vv*255*1.1))|0; pd[ii]=pd[ii+1]=pd[ii+2]=vv;
   }
   return id;
 }
-
 function enhanceColor(id) {
-  const d = id.data; let mn=255, mx=0;
-  for (let i=0;i<d.length;i+=4) { const v=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0; if(v<mn)mn=v; if(v>mx)mx=v; }
-  const rng = mx-mn||1;
-  for (let i=0;i<d.length;i+=4) {
-    for (let c=0;c<3;c++) {
-      let v=(d[i+c]-mn)/rng;
-      v=v<.5?2*v*v:1-(-2*v+2)**2/2;
-      d[i+c]=Math.min(255,Math.max(0,v*255*1.05))|0;
+  const pd=id.data; let mn=255,mx=0;
+  for(let ii=0;ii<pd.length;ii+=4){const vv=(pd[ii]*.299+pd[ii+1]*.587+pd[ii+2]*.114)|0;if(vv<mn)mn=vv;if(vv>mx)mx=vv;}
+  const rng=mx-mn||1;
+  for(let ii=0;ii<pd.length;ii+=4){
+    for(let cc=0;cc<3;cc++){
+      let vv=(pd[ii+cc]-mn)/rng; vv=vv<.5?2*vv*vv:1-(-2*vv+2)**2/2;
+      pd[ii+cc]=Math.min(255,Math.max(0,vv*255*1.05))|0;
     }
   }
   return id;
 }
 
-// ── UI ────────────────────────────────────────────────────────────────────────
+function flash() { const f=document.getElementById('flashOverlay'); f.style.opacity='1'; setTimeout(()=>f.style.opacity='0',100); }
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
 function updateGallery() {
   const thumb = document.getElementById('galleryThumb');
   const empty = document.getElementById('galleryEmpty');
   const count = document.getElementById('galleryCount');
-  if (pages.length > 0) {
-    thumb.src = pages[pages.length-1].dataURL;
-    thumb.style.display = 'block'; empty.style.display = 'none';
-    count.style.display = 'block'; count.textContent = pages.length;
-  } else {
-    thumb.style.display = 'none'; empty.style.display = 'flex'; count.style.display = 'none';
-  }
+  if (pages.length>0) { thumb.src=pages[pages.length-1].dataURL; thumb.style.display='block'; empty.style.display='none'; count.style.display='block'; count.textContent=pages.length; }
+  else { thumb.style.display='none'; empty.style.display='flex'; count.style.display='none'; }
 }
+function updatePageCounter() { document.getElementById('pageCounter').textContent=pages.length+' pág.'; }
 
-function updatePageCounter() {
-  document.getElementById('pageCounter').textContent = pages.length + ' pág.';
-}
-
-function setCapMode(m) {
-  capMode = m;
-  document.getElementById('pillAuto').classList.toggle('active', m==='auto');
-  document.getElementById('pillManual').classList.toggle('active', m==='manual');
-  document.getElementById('autoBar').style.display = m==='auto' ? 'block' : 'none';
-  stableFrames = 0;
-  document.getElementById('autoFill').style.width = '0%';
-  document.getElementById('shutterOuter').classList.remove('armed');
-  document.getElementById('shutterLabel').textContent = m==='auto' ? 'AUTO' : 'CAPTURAR';
-}
-
-function toggleBW() {
-  bwMode = !bwMode;
-  document.getElementById('pillBW').classList.toggle('active', bwMode);
-  showToast(bwMode ? '⚫ P&B ativado' : '🎨 Colorido', 'ok');
-}
-
-// ── Pages render ──────────────────────────────────────────────────────────────
-function renderPages() {
-  const grid = document.getElementById('pagesGrid');
-  document.getElementById('pagesTitle').textContent = `Capturas (${pages.length})`;
-  document.getElementById('btnExport').disabled = pages.length === 0 || !document.getElementById('patientName').value.trim();
-
-  if (pages.length === 0) {
-    grid.innerHTML = `<div class="pages-empty"><div class="pages-empty-icon">📂</div><div>Nenhuma captura ainda.<br>Use a câmera para digitalizar.</div></div>`;
-    return;
-  }
-  grid.innerHTML = '';
-  pages.forEach((p, i) => {
-    const card = document.createElement('div');
-    card.className = 'page-card';
-    card.innerHTML = `
-      <img src="${p.dataURL}" onclick="openPreview(${p.id})">
-      <div class="page-num">${i+1}</div>
-      <div class="page-del" onclick="deletePage(${p.id})">✕</div>
-      ${p.bw ? '<div class="bw-tag">P&B</div>' : ''}
-    `;
-    grid.appendChild(card);
-  });
-}
-
-function deletePage(id) {
-  pages = pages.filter(p => p.id !== id);
-  updateGallery(); updatePageCounter();
-  renderPages(); updateUploadPath();
-  showToast('Página removida');
-}
-
-function clearAllPages() {
-  if (!pages.length) return;
-  if (!confirm(`Remover todas as ${pages.length} páginas?`)) return;
-  pages = [];
-  updateGallery(); updatePageCounter();
-  renderPages(); updateUploadPath();
-}
-
-function openPreview(id) {
-  const p = pages.find(x => x.id === id); if (!p) return;
-  document.getElementById('previewImg').src = p.dataURL;
-  showScreen('sPreview');
-
-// ── Upload sheet ──────────────────────────────────────────────────────────────
-function showSheet(show) {
-  const el = document.getElementById('uploadSheet');
-  el.classList.toggle('show', show);
-  if (show) {
-    // Reset steps
-    [1,2,3].forEach(i => setStep(i, '', '⏸', i===1?'Aguardando...':'Aguardando etapa anterior...'));
-    document.getElementById('uploadDoneBtn').style.display = 'none';
-    document.getElementById('sheetTitle').textContent = 'Enviando para o Drive';
-    document.getElementById('sheetSub').textContent = 'Aguarde...';
-  }
-}
-
-function closeSheet() { document.getElementById('uploadSheet').classList.remove('show'); }
-
-function setStep(num, state, icon, detail) {
-  const iconEl   = document.getElementById(`step${num}Icon`);
-  const checkEl  = document.getElementById(`step${num}Check`);
-  const detailEl = document.getElementById(`step${num}Detail`);
-  iconEl.className = 'step-icon' + (state ? ' ' + state : '');
-  checkEl.textContent = icon;
-  detailEl.textContent = detail;
-}
-
-// ── Progress overlay ──────────────────────────────────────────────────────────
-function showProg(show) { document.getElementById('progOverlay').classList.toggle('show', show); }
-function setProg(p, lbl) {
-  document.getElementById('progFill').style.strokeDashoffset = 213.6*(1-p);
-  document.getElementById('progPct').textContent = Math.round(p*100)+'%';
-  document.getElementById('progLbl').textContent = lbl;
-}
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-let toastTimer;
-function showToast(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show' + (type ? ' '+type : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.className='', 2600);
-}
-
-
-// ── Camera ────────────────────────────────────────────────────────────────────
-async function startCamera(){
-  document.getElementById('camBlocked').style.display='none';
-  setCamStatus('','Iniciando câmera...');
-  const attempts=[
-    {video:{facingMode:{ideal:facingMode},width:{ideal:1920},height:{ideal:1080}},audio:false},
-    {video:{facingMode},audio:false},
-    {video:true,audio:false}
-  ];
-  let ok=false;
-  for(const c of attempts){try{stream=await navigator.mediaDevices.getUserMedia(c);ok=true;break}catch(e){}}
-  if(!ok){showCamBlocked();return}
-  video.srcObject=stream;
-  try{await video.play()}catch(e){}
-  detecting=true;
-  setCamStatus('on','Pronto — aponte para um documento');
-  requestAnimationFrame(processFrame);
-  showToast('📷 Câmera ativa','ok');
-}
-
-function showCamBlocked(err){
-  const el=document.getElementById('camBlocked');el.style.display='flex';
-  if(!err)return;
-  const t=document.getElementById('blockedTitle'),m=document.getElementById('blockedMsg');
-  if(err.name==='NotAllowedError'){t.textContent='🚫 Permissão negada';m.textContent='Permita o acesso à câmera nas configurações do navegador.'}
-  else if(location.protocol==='file:'){t.textContent='⚠️ Protocolo incorreto';m.textContent='Abra via HTTPS usando o servidor.py incluído.'}
-  else{t.textContent='❌ Erro na câmera';m.textContent=err.message||'Erro desconhecido.'}
-}
-async function retryCamera(){document.getElementById('camBlocked').style.display='none';await startCamera()}
-async function switchCamera(){facingMode=facingMode==='environment'?'user':'environment';detecting=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}prevGray=null;stableFrames=0;await startCamera()}
-function setCamStatus(type,text){document.getElementById('camStatusTxt').textContent=text;const d=document.getElementById('camDot');d.className='cam-dot'+(type?' '+type:'')}
-
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function updateGallery(){
-  const thumb=document.getElementById('galleryThumb'),empty=document.getElementById('galleryEmpty'),count=document.getElementById('galleryCount');
-  if(pages.length>0){thumb.src=pages[pages.length-1].dataURL;thumb.style.display='block';empty.style.display='none';count.style.display='block';count.textContent=pages.length}
-  else{thumb.style.display='none';empty.style.display='flex';count.style.display='none'}
-}
-function updatePageCounter(){document.getElementById('pageCounter').textContent=pages.length+' pág.'}
-function setCapMode(m){
+window.setCapMode = function(m) {
   capMode=m;
   document.getElementById('pillAuto').classList.toggle('active',m==='auto');
   document.getElementById('pillManual').classList.toggle('active',m==='manual');
   document.getElementById('autoBar').style.display=m==='auto'?'block':'none';
-  stableFrames=0;document.getElementById('autoFill').style.width='0%';
+  stableFrames=0; document.getElementById('autoFill').style.width='0%';
   document.getElementById('shutterOuter').classList.remove('armed');
   document.getElementById('shutterLabel').textContent=m==='auto'?'AUTO':'CAPTURAR';
-}
-function toggleBW(){bwMode=!bwMode;document.getElementById('pillBW').classList.toggle('active',bwMode);showToast(bwMode?'⚫ P&B ativado':'🎨 Colorido','ok')}
+};
+
+window.toggleBW = function() { bwMode=!bwMode; document.getElementById('pillBW').classList.toggle('active',bwMode); showToast(bwMode?'⚫ P&B ativado':'🎨 Colorido','ok'); };
 
 // ── Pages render ──────────────────────────────────────────────────────────────
-function renderPages(){
-  const grid=document.getElementById('pagesGrid');
+function renderPages() {
+  const grid = document.getElementById('pagesGrid');
   document.getElementById('pagesTitle').textContent='Capturas ('+pages.length+')';
-  if(pages.length===0){grid.innerHTML='<div class="pages-empty"><div class="pages-empty-icon">📂</div><div>Nenhuma captura ainda.<br>Use a câmera para digitalizar.</div></div>';return}
+  if (pages.length===0) { grid.innerHTML='<div class="pages-empty"><div class="pages-empty-icon">📂</div><div>Nenhuma captura ainda.<br>Use a câmera para digitalizar.</div></div>'; return; }
   grid.innerHTML='';
-  pages.forEach((p,i)=>{
-    const card=document.createElement('div');card.className='page-card';
-    card.innerHTML='<img src="'+p.dataURL+'" onclick="openPreview('+p.id+')"><div class="page-num">'+(i+1)+'</div><div class="page-del" onclick="deletePage('+p.id+')">✕</div>'+(p.bw?'<div class="bw-tag">P&B</div>':'');
+  pages.forEach((pg,idx) => {
+    const card=document.createElement('div'); card.className='page-card';
+    card.innerHTML='<img src="'+pg.dataURL+'" onclick="openPreview('+pg.id+')"><div class="page-num">'+(idx+1)+'</div><div class="page-del" onclick="deletePage('+pg.id+')">✕</div>'+(pg.bw?'<div class="bw-tag">P&B</div>':'');
     grid.appendChild(card);
   });
 }
-function deletePage(id){pages=pages.filter(p=>p.id!==id);updateGallery();updatePageCounter();renderPages();updateExportBtn();showToast('Página removida')}
-function clearAllPages(){if(!pages.length)return;if(!confirm('Remover todas as '+pages.length+' páginas?'))return;pages=[];updateGallery();updatePageCounter();renderPages();updateExportBtn()}
-function openPreview(id){const p=pages.find(x=>x.id===id);if(!p)return;document.getElementById('previewImg').src=p.dataURL;showScreen('sPreview')}
+
+window.deletePage    = function(id) { pages=pages.filter(p=>p.id!==id); updateGallery(); updatePageCounter(); renderPages(); updateExportBtn(); showToast('Página removida'); };
+window.clearAllPages = function() { if(!pages.length)return; if(!confirm('Remover todas as '+pages.length+' páginas?'))return; pages=[]; updateGallery(); updatePageCounter(); renderPages(); updateExportBtn(); };
+window.openPreview   = function(id) { const pg=pages.find(p=>p.id===id); if(!pg)return; document.getElementById('previewImg').src=pg.dataURL; showScreen('sPreview'); };
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-if(location.protocol==='file:'||!navigator.mediaDevices?.getUserMedia){
+if (location.protocol==='file:' || !navigator.mediaDevices?.getUserMedia) {
   document.getElementById('httpsWarn').style.display='block';
 }
 updateDestRow();
 updateExportBtn();
 
-if(GOOGLE_CLIENT_ID&&!GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')){
-  const s=document.createElement('script');
-  s.src='https://accounts.google.com/gsi/client';
-  s.onload=initGoogleAuth;
-  document.head.appendChild(s);
+if (GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) {
+  const gisScript = document.createElement('script');
+  gisScript.src = 'https://accounts.google.com/gsi/client';
+  gisScript.onload = initGoogleAuth;
+  document.head.appendChild(gisScript);
   loadPickerApi();
+} else {
+  document.getElementById('driveCardValue').textContent = 'Client ID não configurado';
 }
-if(!GOOGLE_CLIENT_ID||GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')){
-  document.getElementById('driveCardValue').textContent='Client ID não configurado';
-}
+
+})(); // end IIFE
 </script>
 </body>
 </html>
