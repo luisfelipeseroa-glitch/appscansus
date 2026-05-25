@@ -13,421 +13,154 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ TOKENS */
 :root {
-  --bg:       #080c10;
-  --bg2:      #0e1318;
-  --bg3:      #141b22;
-  --card:     #1a232c;
-  --card2:    #202c38;
-  --border:   #253040;
-  --border2:  #2e3f52;
-  --accent:   #0af0a0;
-  --accent2:  #00c97a;
-  --accent3:  #00916e;
-  --blue:     #4a9eff;
-  --blue2:    #1a6fe8;
-  --warn:     #f0a30a;
-  --red:      #ff4d4d;
-  --text:     #e8eef5;
-  --muted:    #6b8099;
-  --dim:      #3d5166;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bot: env(safe-area-inset-bottom, 0px);
+  --bg:#080c10;--bg2:#0e1318;--bg3:#141b22;--card:#1a232c;--card2:#202c38;
+  --border:#253040;--border2:#2e3f52;
+  --accent:#0af0a0;--accent2:#00c97a;--accent3:#00916e;
+  --blue:#4a9eff;--blue2:#1a6fe8;--warn:#f0a30a;--red:#ff4d4d;
+  --text:#e8eef5;--muted:#6b8099;--dim:#3d5166;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{height:100%;background:#000}
-body{
-  height:100dvh;font-family:'Sora',sans-serif;
-  background:var(--bg);color:var(--text);
-  overflow:hidden;display:flex;flex-direction:column;
-  overscroll-behavior:none;
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ SCREENS */
+body{height:100dvh;font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;display:flex;flex-direction:column;overscroll-behavior:none}
 .screen{display:none;flex-direction:column;flex:1;overflow:hidden}
 .screen.active{display:flex}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ WELCOME */
-#sWelcome{
-  background:var(--bg);
-  align-items:center;justify-content:center;
-  padding:28px 24px;position:relative;overflow:hidden;
-}
-.wc-bg{
-  position:absolute;inset:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 60% 40% at 50% -10%, rgba(10,240,160,.07) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 80% 110%, rgba(74,158,255,.06) 0%, transparent 60%);
-}
-.wc-grid{
-  position:absolute;inset:0;pointer-events:none;
-  background-image:
-    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-  background-size:40px 40px;
-  mask-image:radial-gradient(ellipse 80% 70% at 50% 0%, black 30%, transparent 80%);
-}
-.wc-inner{
-  width:100%;max-width:420px;
-  display:flex;flex-direction:column;
-  align-items:center;gap:28px;position:relative;z-index:1;
-  animation:fadeUp .55s cubic-bezier(.16,1,.3,1);
-}
+/* ── WELCOME ── */
+#sWelcome{background:var(--bg);align-items:center;justify-content:center;padding:28px 24px;position:relative;overflow:hidden}
+.wc-bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 50% -10%,rgba(10,240,160,.07) 0%,transparent 70%),radial-gradient(ellipse 40% 30% at 80% 110%,rgba(74,158,255,.06) 0%,transparent 60%)}
+.wc-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 70% at 50% 0%,black 30%,transparent 80%)}
+.wc-inner{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:28px;position:relative;z-index:1;animation:fadeUp .55s cubic-bezier(.16,1,.3,1)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
-
 .wc-logo{display:flex;align-items:center;gap:14px}
-.wc-icon{
-  width:58px;height:58px;border-radius:18px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  display:flex;align-items:center;justify-content:center;font-size:28px;
-  box-shadow:0 0 0 1px rgba(10,240,160,.2), 0 8px 32px rgba(10,240,160,.25), 0 2px 8px rgba(0,0,0,.5);
-}
+.wc-icon{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 0 1px rgba(10,240,160,.2),0 8px 32px rgba(10,240,160,.25),0 2px 8px rgba(0,0,0,.5)}
 .wc-wordmark{display:flex;flex-direction:column}
 .wc-name{font-size:2rem;font-weight:800;letter-spacing:-1.5px;line-height:1}
 .wc-name em{color:var(--accent);font-style:normal}
 .wc-tagline{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:.12em;margin-top:3px}
-
-/* Drive status card */
-.drive-card{
-  width:100%;background:var(--card);
-  border:1.5px solid var(--border2);border-radius:16px;
-  padding:16px 18px;display:flex;align-items:center;gap:14px;
-  transition:border-color .3s;
-}
+.drive-card{width:100%;background:var(--card);border:1.5px solid var(--border2);border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:border-color .3s}
 .drive-card.connected{border-color:rgba(10,240,160,.3)}
 .drive-card.connected .drive-card-icon{background:rgba(10,240,160,.12);color:var(--accent)}
-.drive-card-icon{
-  width:42px;height:42px;border-radius:12px;
-  background:var(--card2);
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.3rem;flex-shrink:0;transition:all .3s;
-}
+.drive-card-icon{width:42px;height:42px;border-radius:12px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;transition:all .3s}
 .drive-card-info{flex:1;min-width:0}
 .drive-card-label{font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.05em}
 .drive-card-value{font-size:.88rem;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .drive-card-value.dim{color:var(--muted)}
-.drive-card-action{
-  padding:7px 14px;border-radius:10px;border:none;cursor:pointer;
-  font-family:'Sora',sans-serif;font-size:.75rem;font-weight:600;
-  touch-action:manipulation;transition:all .2s;white-space:nowrap;
-}
+.drive-card-action{padding:7px 14px;border-radius:10px;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-size:.75rem;font-weight:600;touch-action:manipulation;transition:all .2s;white-space:nowrap}
 .drive-card-action.login{background:var(--blue2);color:#fff}
 .drive-card-action.login:hover{background:var(--blue)}
 .drive-card-action.logout{background:var(--card2);color:var(--muted);border:1px solid var(--border2)}
 .drive-card-action:active{transform:scale(.95)}
-
-/* HTTPS warning */
-.https-warn{
-  width:100%;background:rgba(240,163,10,.07);
-  border:1px solid rgba(240,163,10,.25);border-radius:12px;
-  padding:13px 15px;font-size:.75rem;color:var(--warn);line-height:1.7;
-}
+.https-warn{width:100%;background:rgba(240,163,10,.07);border:1px solid rgba(240,163,10,.25);border-radius:12px;padding:13px 15px;font-size:.75rem;color:var(--warn);line-height:1.7}
 .https-warn strong{display:block;margin-bottom:3px;font-size:.8rem}
-
-/* Start button */
-.btn-start{
-  width:100%;padding:16px;border-radius:14px;border:none;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#041a10;font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-  box-shadow:0 4px 24px rgba(10,240,160,.25);
-  transition:transform .15s,box-shadow .15s;touch-action:manipulation;
-}
+.btn-start{width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#041a10;font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 24px rgba(10,240,160,.25);transition:transform .15s,box-shadow .15s;touch-action:manipulation}
 .btn-start:active{transform:scale(.97);box-shadow:0 2px 12px rgba(10,240,160,.15)}
-
 .wc-footer{font-size:.65rem;color:var(--dim);font-family:'JetBrains Mono',monospace;text-align:center;line-height:1.8}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ CAMERA */
+/* ── CAMERA ── */
 #sCamera{background:#000;position:relative}
-
 #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 #overlayCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #captureCanvas{display:none}
-
-/* Camera blocked */
-#camBlocked{
-  position:absolute;inset:0;background:rgba(8,12,16,.97);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:16px;padding:32px;text-align:center;z-index:20;
-}
+#camBlocked{position:absolute;inset:0;background:rgba(8,12,16,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;z-index:20}
 .blocked-icon{font-size:3rem}
 .blocked-title{font-size:1.1rem;font-weight:700}
 .blocked-msg{font-size:.8rem;color:var(--muted);line-height:1.7;max-width:300px}
-.blocked-box{
-  background:var(--card);border:1px solid var(--border2);border-radius:12px;
-  padding:14px 16px;font-size:.76rem;color:var(--muted);line-height:1.8;
-  text-align:left;width:100%;max-width:340px;
-}
+.blocked-box{background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:.76rem;color:var(--muted);line-height:1.8;text-align:left;width:100%;max-width:340px}
 .blocked-box b{color:var(--text);display:block;margin-bottom:4px}
-
-/* Top bar */
-.cam-topbar{
-  position:absolute;top:0;left:0;right:0;z-index:20;
-  padding:12px 16px;padding-top:calc(12px + var(--safe-top));
-  display:flex;align-items:center;gap:10px;
-  background:linear-gradient(to bottom,rgba(0,0,0,.75) 0%,transparent 100%);
-}
-.cam-back{
-  width:38px;height:38px;border-radius:50%;
-  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
-  color:#fff;display:flex;align-items:center;justify-content:center;
-  font-size:1rem;cursor:pointer;touch-action:manipulation;flex-shrink:0;
-  backdrop-filter:blur(8px);
-}
+.cam-topbar{position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 16px;padding-top:calc(12px + var(--safe-top));display:flex;align-items:center;gap:10px;background:linear-gradient(to bottom,rgba(0,0,0,.75) 0%,transparent 100%)}
+.cam-back{width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;touch-action:manipulation;flex-shrink:0;backdrop-filter:blur(8px)}
 .cam-status-row{flex:1;display:flex;align-items:center;gap:6px}
 .cam-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
 .cam-dot.on{background:var(--accent);animation:blink 1.5s infinite}
 .cam-dot.warn{background:var(--warn)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 #camStatusTxt{font-size:.7rem;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace}
-
-.page-counter{
-  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);
-  border-radius:20px;padding:5px 12px;
-  font-size:.72rem;font-family:'JetBrains Mono',monospace;
-  color:#fff;flex-shrink:0;backdrop-filter:blur(8px);
-}
-
-/* Mode pills - top right */
-.cam-pills{
-  position:absolute;top:0;right:0;z-index:20;
-  padding:12px 16px;padding-top:calc(12px + var(--safe-top));
-  display:flex;gap:6px;align-items:center;
-}
-.pill{
-  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);
-  border-radius:20px;padding:6px 12px;
-  font-size:.67rem;font-family:'JetBrains Mono',monospace;font-weight:500;
-  color:rgba(255,255,255,.6);cursor:pointer;touch-action:manipulation;
-  transition:all .2s;backdrop-filter:blur(8px);
-}
+.page-counter{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:5px 12px;font-size:.72rem;font-family:'JetBrains Mono',monospace;color:#fff;flex-shrink:0;backdrop-filter:blur(8px)}
+.cam-pills{position:absolute;top:0;right:0;z-index:20;padding:12px 16px;padding-top:calc(12px + var(--safe-top));display:flex;gap:6px;align-items:center}
+.pill{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 12px;font-size:.67rem;font-family:'JetBrains Mono',monospace;font-weight:500;color:rgba(255,255,255,.6);cursor:pointer;touch-action:manipulation;transition:all .2s;backdrop-filter:blur(8px)}
 .pill.active{background:rgba(10,240,160,.18);border-color:rgba(10,240,160,.5);color:var(--accent)}
 .pill:active{transform:scale(.94)}
-
-/* Auto progress */
 .auto-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);z-index:15}
 .auto-fill{height:100%;background:var(--accent);width:0%;transition:width .12s linear;box-shadow:0 0 10px var(--accent)}
-
-/* Flash */
 #flashOverlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40;transition:opacity .07s}
-
-/* Bottom controls */
-.cam-bottom{
-  position:absolute;bottom:0;left:0;right:0;z-index:20;
-  padding:20px 28px;padding-bottom:calc(20px + var(--safe-bot));
-  background:linear-gradient(to top,rgba(0,0,0,.82) 0%,transparent 100%);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.cam-side-btn{
-  width:50px;height:50px;border-radius:50%;
-  background:rgba(0,0,0,.5);border:1.5px solid rgba(255,255,255,.18);
-  color:#fff;display:flex;align-items:center;justify-content:center;
-  font-size:1.25rem;cursor:pointer;touch-action:manipulation;
-  transition:transform .15s;backdrop-filter:blur(8px);
-}
+.cam-bottom{position:absolute;bottom:0;left:0;right:0;z-index:20;padding:20px 28px;padding-bottom:calc(20px + var(--safe-bot));background:linear-gradient(to top,rgba(0,0,0,.82) 0%,transparent 100%);display:flex;align-items:center;justify-content:space-between}
+.cam-side-btn{width:50px;height:50px;border-radius:50%;background:rgba(0,0,0,.5);border:1.5px solid rgba(255,255,255,.18);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.25rem;cursor:pointer;touch-action:manipulation;transition:transform .15s;backdrop-filter:blur(8px)}
 .cam-side-btn:active{transform:scale(.88)}
-
-/* Shutter */
 .shutter-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
-.shutter-outer{
-  width:82px;height:82px;border-radius:50%;
-  border:3px solid rgba(255,255,255,.25);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;touch-action:manipulation;transition:border-color .3s;
-}
+.shutter-outer{width:82px;height:82px;border-radius:50%;border:3px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;transition:border-color .3s}
 .shutter-outer.armed{border-color:rgba(10,240,160,.6)}
-.shutter-inner{
-  width:66px;height:66px;border-radius:50%;
-  background:#fff;transition:background .3s,transform .1s;
-}
+.shutter-inner{width:66px;height:66px;border-radius:50%;background:#fff;transition:background .3s,transform .1s}
 .shutter-outer.armed .shutter-inner{background:var(--accent)}
 .shutter-outer:active .shutter-inner{transform:scale(.88)}
 .shutter-label{font-size:.62rem;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,.5);letter-spacing:.08em}
-
-/* Gallery btn */
-.gallery-btn{
-  width:50px;height:50px;border-radius:12px;overflow:hidden;
-  border:2px solid rgba(255,255,255,.18);cursor:pointer;
-  position:relative;touch-action:manipulation;background:var(--bg3);flex-shrink:0;
-}
+.gallery-btn{width:50px;height:50px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.18);cursor:pointer;position:relative;touch-action:manipulation;background:var(--bg3);flex-shrink:0}
 .gallery-btn img{width:100%;height:100%;object-fit:cover}
-.gallery-count{
-  position:absolute;bottom:0;right:0;
-  background:var(--accent);color:#041a10;
-  font-size:.58rem;font-weight:700;font-family:'JetBrains Mono',monospace;
-  padding:2px 5px;border-top-left-radius:7px;
-}
-.gallery-empty{
-  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;color:var(--dim);
-}
+.gallery-count{position:absolute;bottom:0;right:0;background:var(--accent);color:#041a10;font-size:.58rem;font-weight:700;font-family:'JetBrains Mono',monospace;padding:2px 5px;border-top-left-radius:7px}
+.gallery-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--dim)}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PAGES */
+/* ── PAGES ── */
 #sPages{background:var(--bg)}
-
-.pages-header{
-  background:var(--bg2);border-bottom:1px solid var(--border);
-  padding:14px 16px;padding-top:calc(14px + var(--safe-top));
-  display:flex;align-items:center;gap:12px;flex-shrink:0;
-}
+.pages-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;padding-top:calc(14px + var(--safe-top));display:flex;align-items:center;gap:12px;flex-shrink:0}
 .pages-header h2{flex:1;font-size:.95rem;font-weight:700}
-.icon-btn{
-  width:36px;height:36px;border-radius:10px;
-  background:var(--card);border:1px solid var(--border);
-  color:var(--text);display:flex;align-items:center;justify-content:center;
-  font-size:.9rem;cursor:pointer;touch-action:manipulation;transition:background .15s;
-}
+.icon-btn{width:36px;height:36px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;touch-action:manipulation;transition:background .15s}
 .icon-btn:active{background:var(--border2)}
 
-/* Document metadata form */
-.doc-meta-bar{
-  background:var(--bg2);border-bottom:1px solid var(--border);
-  padding:12px 14px;display:flex;gap:8px;flex-shrink:0;
-}
-.meta-field{flex:1;display:flex;flex-direction:column;gap:4px}
-.meta-label{font-size:.6rem;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-.meta-select,.meta-input{
-  background:var(--card);border:1.5px solid var(--border);border-radius:10px;
-  padding:9px 11px;color:var(--text);font-family:'Sora',sans-serif;font-size:.8rem;
-  outline:none;transition:border-color .2s;width:100%;
-  -webkit-appearance:none;appearance:none;
-}
-.meta-select{cursor:pointer}
-.meta-select:focus,.meta-input:focus{border-color:var(--accent)}
-.meta-input::placeholder{color:var(--dim)}
+/* Filename bar */
+.fname-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 14px;flex-shrink:0}
+.fname-label{font-size:.6rem;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+.fname-inp{width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Sora',sans-serif;font-size:.83rem;outline:none;transition:border-color .2s}
+.fname-inp:focus{border-color:var(--accent)}
 
-/* Pages grid */
-.pages-scroll{
-  flex:1;overflow-y:auto;padding:12px;
-  display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;
-}
+.pages-scroll{flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
 .pages-scroll::-webkit-scrollbar{width:0}
-
-.page-card{
-  background:var(--card);border:1.5px solid var(--border);
-  border-radius:13px;overflow:hidden;position:relative;
-  animation:popIn .22s cubic-bezier(.16,1,.3,1);
-}
+.page-card{background:var(--card);border:1.5px solid var(--border);border-radius:13px;overflow:hidden;position:relative;animation:popIn .22s cubic-bezier(.16,1,.3,1)}
 @keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 .page-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;cursor:pointer}
-.page-num{
-  position:absolute;top:7px;left:7px;
-  background:rgba(0,0,0,.72);color:var(--accent);
-  font-family:'JetBrains Mono',monospace;font-size:.58rem;
-  padding:2px 7px;border-radius:10px;
-}
-.page-del{
-  position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
-  background:rgba(0,0,0,.72);border:1px solid rgba(255,77,77,.3);color:var(--red);
-  display:flex;align-items:center;justify-content:center;font-size:.65rem;
-  cursor:pointer;touch-action:manipulation;
-}
-.bw-tag{
-  position:absolute;bottom:34px;left:7px;
-  background:rgba(0,0,0,.72);color:rgba(255,255,255,.6);
-  font-family:'JetBrains Mono',monospace;font-size:.54rem;
-  padding:1px 6px;border-radius:7px;
-}
-.page-label{
-  width:100%;background:transparent;border:none;border-top:1px solid var(--border);
-  color:var(--text);font-family:'Sora',sans-serif;font-size:.7rem;
-  padding:7px 9px;outline:none;
-}
-.page-label::placeholder{color:var(--dim)}
-
-.pages-empty{
-  grid-column:1/-1;padding:60px 20px;text-align:center;
-  color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:12px;
-}
+.page-num{position:absolute;top:7px;left:7px;background:rgba(0,0,0,.72);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.58rem;padding:2px 7px;border-radius:10px}
+.page-del{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,77,77,.3);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:.65rem;cursor:pointer;touch-action:manipulation}
+.bw-tag{position:absolute;bottom:7px;left:7px;background:rgba(0,0,0,.72);color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;font-size:.54rem;padding:1px 6px;border-radius:7px}
+.pages-empty{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:12px}
 .pages-empty-icon{font-size:2.5rem;opacity:.35}
 
 /* Pages footer */
-.pages-footer{
-  background:var(--bg2);border-top:1px solid var(--border);
-  padding:14px 16px;padding-bottom:calc(14px + var(--safe-bot));
-  display:flex;flex-direction:column;gap:10px;flex-shrink:0;
-}
+.pages-footer{background:var(--bg2);border-top:1px solid var(--border);padding:14px 16px;padding-bottom:calc(14px + var(--safe-bot));display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 
-/* Drive upload summary */
-.upload-summary{
-  background:var(--card);border:1.5px solid var(--border2);
-  border-radius:12px;padding:11px 14px;
-  display:flex;align-items:center;gap:10px;
-}
-.upload-summary-icon{font-size:1.2rem;flex-shrink:0}
-.upload-summary-info{flex:1;min-width:0}
-.upload-path{
-  font-size:.72rem;font-family:'JetBrains Mono',monospace;
-  color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.upload-path.dim{color:var(--muted)}
-.upload-drive-status{font-size:.67rem;color:var(--muted);margin-top:2px}
+/* Destination row */
+.dest-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--border2);border-radius:12px;padding:10px 14px;cursor:pointer;transition:border-color .2s;touch-action:manipulation}
+.dest-row:active{border-color:var(--accent)}
+.dest-row.selected{border-color:rgba(10,240,160,.4)}
+.dest-icon{font-size:1.2rem;flex-shrink:0}
+.dest-info{flex:1;min-width:0}
+.dest-path{font-size:.78rem;font-family:'JetBrains Mono',monospace;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dest-path.dim{color:var(--muted)}
+.dest-sub{font-size:.65rem;color:var(--muted);margin-top:2px}
+.dest-change{font-size:.68rem;color:var(--blue);font-weight:600;flex-shrink:0;white-space:nowrap}
 
-.btn-export{
-  width:100%;padding:14px;border-radius:13px;border:none;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#041a10;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-  box-shadow:0 4px 20px rgba(10,240,160,.2);touch-action:manipulation;
-  transition:transform .15s,box-shadow .15s;
-}
+.btn-export{width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#041a10;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 20px rgba(10,240,160,.2);touch-action:manipulation;transition:transform .15s,box-shadow .15s}
 .btn-export:disabled{background:var(--card2);color:var(--dim);box-shadow:none;cursor:not-allowed}
 .btn-export:not(:disabled):active{transform:scale(.97);box-shadow:0 2px 10px rgba(10,240,160,.1)}
-
-.btn-secondary{
-  flex:1;padding:12px;border-radius:12px;
-  background:transparent;border:1.5px solid var(--border2);
-  color:var(--muted);font-family:'Sora',sans-serif;font-size:.8rem;
-  cursor:pointer;touch-action:manipulation;transition:all .2s;
-}
-.btn-secondary:active{background:rgba(255,77,77,.08);color:var(--red);border-color:rgba(255,77,77,.3)}
 .btn-row{display:flex;gap:8px}
+.btn-secondary{flex:1;padding:12px;border-radius:12px;background:transparent;border:1.5px solid var(--border2);color:var(--muted);font-family:'Sora',sans-serif;font-size:.8rem;cursor:pointer;touch-action:manipulation;transition:all .2s}
+.btn-secondary:active{background:rgba(255,77,77,.08);color:var(--red);border-color:rgba(255,77,77,.3)}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PREVIEW */
+/* ── PREVIEW ── */
 #sPreview{background:#000;position:relative}
 #previewImg{width:100%;height:100%;object-fit:contain}
-.preview-close{
-  position:absolute;top:calc(16px + var(--safe-top));right:16px;
-  width:44px;height:44px;border-radius:50%;
-  background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.18);
-  color:#fff;font-size:1.2rem;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;z-index:10;touch-action:manipulation;backdrop-filter:blur(8px);
-}
+.preview-close{position:absolute;top:calc(16px + var(--safe-top));right:16px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:1.2rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;touch-action:manipulation;backdrop-filter:blur(8px)}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ UPLOAD STATUS SHEET */
-#uploadSheet{
-  display:none;position:fixed;inset:0;z-index:90;
-  background:rgba(0,0,0,.75);backdrop-filter:blur(10px);
-  align-items:flex-end;justify-content:center;
-  padding:0 0 var(--safe-bot);
-}
+/* ── UPLOAD SHEET ── */
+#uploadSheet{display:none;position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);align-items:flex-end;justify-content:center;padding:0 0 var(--safe-bot)}
 #uploadSheet.show{display:flex}
-.upload-panel{
-  width:100%;max-width:500px;
-  background:var(--bg2);border-radius:24px 24px 0 0;
-  border-top:1px solid var(--border2);
-  padding:20px 24px 32px;
-  animation:slideUp .35s cubic-bezier(.16,1,.3,1);
-}
+.upload-panel{width:100%;max-width:500px;background:var(--bg2);border-radius:24px 24px 0 0;border-top:1px solid var(--border2);padding:20px 24px 32px;animation:slideUp .35s cubic-bezier(.16,1,.3,1)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.upload-panel-handle{
-  width:40px;height:4px;border-radius:2px;
-  background:var(--border2);margin:0 auto 20px;
-}
+.upload-panel-handle{width:40px;height:4px;border-radius:2px;background:var(--border2);margin:0 auto 20px}
 .upload-panel-title{font-size:1rem;font-weight:700;margin-bottom:4px}
 .upload-panel-sub{font-size:.76rem;color:var(--muted);margin-bottom:20px}
-
-.upload-step{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 0;border-bottom:1px solid var(--border);
-}
+.upload-step{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .upload-step:last-child{border-bottom:none}
-.step-icon{
-  width:38px;height:38px;border-radius:10px;
-  background:var(--card);flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
-}
+.step-icon{width:38px;height:38px;border-radius:10px;background:var(--card);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
 .step-icon.done{background:rgba(10,240,160,.12)}
 .step-icon.active{background:rgba(74,158,255,.12);animation:pulse .8s ease-in-out infinite alternate}
 .step-icon.err{background:rgba(255,77,77,.1)}
@@ -436,41 +169,20 @@ body{
 .step-label{font-size:.83rem;font-weight:600}
 .step-detail{font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
 .step-check{font-size:1rem;flex-shrink:0}
+.upload-done-btn{width:100%;margin-top:20px;padding:14px;border-radius:13px;border:none;background:var(--accent);color:#041a10;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;touch-action:manipulation}
 
-.upload-done-btn{
-  width:100%;margin-top:20px;padding:14px;border-radius:13px;border:none;
-  background:var(--accent);color:#041a10;
-  font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;
-  cursor:pointer;touch-action:manipulation;
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PROGRESS */
-#progOverlay{
-  display:none;position:fixed;inset:0;z-index:100;
-  background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
-  align-items:center;justify-content:center;flex-direction:column;gap:16px;
-}
+/* ── PROGRESS ── */
+#progOverlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;flex-direction:column;gap:16px}
 #progOverlay.show{display:flex}
 .prog-wrap{position:relative;width:80px;height:80px}
 .prog-svg{transform:rotate(-90deg)}
 .prog-bg{stroke:var(--card2);fill:none}
 .prog-fill{fill:none;stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .3s}
-.prog-pct{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--accent);
-}
+.prog-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--accent)}
 .prog-lbl{font-size:.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ TOAST */
-#toast{
-  position:fixed;bottom:calc(18px + var(--safe-bot));
-  left:50%;transform:translateX(-50%) translateY(70px);
-  background:var(--text);color:#080c10;
-  padding:10px 20px;border-radius:24px;font-size:.82rem;font-weight:600;
-  white-space:nowrap;z-index:200;pointer-events:none;
-  transition:transform .3s cubic-bezier(.175,.885,.32,1.275),opacity .3s;
-  opacity:0;box-shadow:0 6px 24px rgba(0,0,0,.5);
-}
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(18px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(70px);background:var(--text);color:#080c10;padding:10px 20px;border-radius:24px;font-size:.82rem;font-weight:600;white-space:nowrap;z-index:200;pointer-events:none;transition:transform .3s cubic-bezier(.175,.885,.32,1.275),opacity .3s;opacity:0;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #toast.err{background:var(--red);color:#fff}
 #toast.ok{background:var(--accent);color:#041a10}
@@ -478,12 +190,10 @@ body{
 </head>
 <body>
 
-<!-- ══════════════════════════════ WELCOME -->
+<!-- ══ WELCOME ══ -->
 <div class="screen active" id="sWelcome">
-  <div class="wc-bg"></div>
-  <div class="wc-grid"></div>
+  <div class="wc-bg"></div><div class="wc-grid"></div>
   <div class="wc-inner">
-
     <div class="wc-logo">
       <div class="wc-icon">📋</div>
       <div class="wc-wordmark">
@@ -491,58 +201,36 @@ body{
         <div class="wc-tagline">DIGITALIZADOR DE DOCUMENTOS</div>
       </div>
     </div>
-
     <div class="drive-card" id="driveCard">
       <div class="drive-card-icon" id="driveCardIcon">☁️</div>
       <div class="drive-card-info">
         <div class="drive-card-label">GOOGLE DRIVE</div>
         <div class="drive-card-value dim" id="driveCardValue">Não conectado</div>
       </div>
-      <button class="drive-card-action login" id="driveCardBtn" onclick="driveLogin()">
-        Conectar
-      </button>
+      <button class="drive-card-action login" id="driveCardBtn" onclick="driveLogin()">Conectar</button>
     </div>
-
     <div class="https-warn" id="httpsWarn" style="display:none">
       <strong>⚠️ Câmera indisponível neste contexto</strong>
-      Abra via <strong>HTTPS</strong> usando o <code>servidor.py</code> incluído.<br>
-      No celular: acesse <code>https://SEU-IP:4443/scanner-sus-v5.html</code>
+      Abra via <strong>HTTPS</strong> usando o <code>servidor.py</code> incluído.
     </div>
-
-    <button class="btn-start" onclick="startApp()">
-      📷 &nbsp;Abrir Scanner
-    </button>
-
-    <div class="wc-footer">
-      Funciona offline · PDFs direto no Google Drive<br>
-      Nenhum dado enviado para servidores externos
-    </div>
-
+    <button class="btn-start" onclick="startApp()">📷 &nbsp;Abrir Scanner</button>
+    <div class="wc-footer">Funciona offline · PDFs direto no Google Drive<br>Nenhum dado enviado para servidores externos</div>
   </div>
 </div>
 
-<!-- ══════════════════════════════ CAMERA -->
+<!-- ══ CAMERA ══ -->
 <div class="screen" id="sCamera">
   <video id="video" autoplay playsinline muted></video>
   <canvas id="overlayCanvas"></canvas>
   <canvas id="captureCanvas"></canvas>
   <div id="flashOverlay"></div>
-
   <div id="camBlocked" style="display:none">
     <div class="blocked-icon">📵</div>
     <div class="blocked-title" id="blockedTitle">Câmera bloqueada</div>
     <div class="blocked-msg" id="blockedMsg">O navegador não conseguiu acessar a câmera.</div>
-    <div class="blocked-box" id="blockedBox">
-      <b>Como resolver:</b>
-      Verifique as permissões no navegador.<br>
-      Se estiver no celular via IP, o acesso precisa ser HTTPS.<br>
-      Aceite o certificado e recarregue a página.
-    </div>
-    <button class="btn-start" style="max-width:260px;margin-top:8px" onclick="retryCamera()">
-      🔄 &nbsp;Tentar novamente
-    </button>
+    <div class="blocked-box"><b>Como resolver:</b>Verifique as permissões no navegador. Se estiver no celular via IP, o acesso precisa ser HTTPS. Aceite o certificado e recarregue.</div>
+    <button class="btn-start" style="max-width:260px;margin-top:8px" onclick="retryCamera()">🔄 &nbsp;Tentar novamente</button>
   </div>
-
   <div class="cam-topbar">
     <div class="cam-back" onclick="goBack()">←</div>
     <div class="cam-status-row">
@@ -551,22 +239,17 @@ body{
     </div>
     <div class="page-counter" id="pageCounter">0 pág.</div>
   </div>
-
   <div class="cam-pills">
     <div class="pill active" id="pillAuto" onclick="setCapMode('auto')">AUTO</div>
     <div class="pill" id="pillManual" onclick="setCapMode('manual')">MANUAL</div>
     <div class="pill" id="pillBW" onclick="toggleBW()">P&B</div>
   </div>
-
-  <div class="auto-bar" id="autoBar">
-    <div class="auto-fill" id="autoFill"></div>
-  </div>
-
+  <div class="auto-bar" id="autoBar"><div class="auto-fill" id="autoFill"></div></div>
   <div class="cam-bottom">
     <div class="cam-side-btn" onclick="switchCamera()">⟳</div>
     <div class="shutter-wrap">
       <div class="shutter-outer" id="shutterOuter" onclick="captureManual()">
-        <div class="shutter-inner" id="shutterInner"></div>
+        <div class="shutter-inner"></div>
       </div>
       <div class="shutter-label" id="shutterLabel">CAPTURAR</div>
     </div>
@@ -578,54 +261,30 @@ body{
   </div>
 </div>
 
-<!-- ══════════════════════════════ PAGES -->
+<!-- ══ PAGES ══ -->
 <div class="screen" id="sPages">
   <div class="pages-header">
     <div class="icon-btn" onclick="goToCamera()">←</div>
     <h2 id="pagesTitle">Capturas</h2>
     <div class="icon-btn" onclick="clearAllPages()">🗑</div>
   </div>
-
-  <!-- Document metadata -->
-  <div class="doc-meta-bar">
-    <div class="meta-field">
-      <div class="meta-label">Tipo / Pasta</div>
-      <select class="meta-select" id="docType" onchange="updateUploadPath()">
-        <option value="BAM">BAM</option>
-        <option value="CIDs">CIDs</option>
-        <option value="Receitas">Receitas</option>
-        <option value="Laudos">Laudos</option>
-        <option value="Exames">Exames</option>
-        <option value="Prontuarios">Prontuários</option>
-        <option value="Outros">Outros</option>
-      </select>
-    </div>
-    <div class="meta-field">
-      <div class="meta-label">Paciente</div>
-      <input class="meta-input" type="text" id="patientName"
-        placeholder="Nome do paciente"
-        oninput="updateUploadPath()"
-        autocomplete="off" autocorrect="off" autocapitalize="words">
-    </div>
+  <div class="fname-bar">
+    <div class="fname-label">Nome do arquivo PDF</div>
+    <input class="fname-inp" type="text" id="pdfName" placeholder="ex: BAM_João_Silva" autocomplete="off">
   </div>
-
   <div class="pages-scroll" id="pagesGrid">
-    <div class="pages-empty">
-      <div class="pages-empty-icon">📂</div>
-      <div>Nenhuma captura ainda.<br>Use a câmera para digitalizar.</div>
-    </div>
+    <div class="pages-empty"><div class="pages-empty-icon">📂</div><div>Nenhuma captura ainda.<br>Use a câmera para digitalizar.</div></div>
   </div>
-
   <div class="pages-footer">
-    <!-- Upload path preview -->
-    <div class="upload-summary">
-      <div class="upload-summary-icon">📁</div>
-      <div class="upload-summary-info">
-        <div class="upload-path" id="uploadPathDisplay">Selecione tipo e paciente</div>
-        <div class="upload-drive-status" id="uploadDriveStatus">—</div>
+    <!-- Destination picker -->
+    <div class="dest-row" id="destRow" onclick="openDrivePicker()">
+      <div class="dest-icon">📁</div>
+      <div class="dest-info">
+        <div class="dest-path dim" id="destPath">Toque para escolher pasta no Drive</div>
+        <div class="dest-sub" id="destSub">Nenhuma pasta selecionada</div>
       </div>
+      <div class="dest-change" id="destChange">Escolher</div>
     </div>
-
     <button class="btn-export" id="btnExport" onclick="doExport()" disabled>
       <span id="btnExportIcon">⬆️</span>
       <span id="btnExportLabel">Salvar PDF no Drive</span>
@@ -637,79 +296,58 @@ body{
   </div>
 </div>
 
-<!-- ══════════════════════════════ PREVIEW -->
+<!-- ══ PREVIEW ══ -->
 <div class="screen" id="sPreview">
   <img id="previewImg" src="" alt="">
   <div class="preview-close" onclick="closePreview()">✕</div>
 </div>
 
-<!-- ══════════════════════════════ UPLOAD SHEET -->
+<!-- ══ UPLOAD SHEET ══ -->
 <div id="uploadSheet">
   <div class="upload-panel">
     <div class="upload-panel-handle"></div>
     <div class="upload-panel-title" id="sheetTitle">Enviando para o Drive</div>
     <div class="upload-panel-sub" id="sheetSub">Aguarde...</div>
-
-    <div class="upload-step" id="step1">
+    <div class="upload-step">
       <div class="step-icon" id="step1Icon">📄</div>
-      <div class="step-info">
-        <div class="step-label">Gerando PDF</div>
-        <div class="step-detail" id="step1Detail">Processando imagens...</div>
-      </div>
+      <div class="step-info"><div class="step-label">Gerando PDF</div><div class="step-detail" id="step1Detail">Processando imagens...</div></div>
       <div class="step-check" id="step1Check">⏳</div>
     </div>
-
-    <div class="upload-step" id="step2">
-      <div class="step-icon" id="step2Icon">📁</div>
-      <div class="step-info">
-        <div class="step-label">Criando pasta</div>
-        <div class="step-detail" id="step2Detail">Verificando estrutura no Drive...</div>
-      </div>
+    <div class="upload-step">
+      <div class="step-icon" id="step2Icon">☁️</div>
+      <div class="step-info"><div class="step-label">Enviando para o Drive</div><div class="step-detail" id="step2Detail">Aguardando PDF...</div></div>
       <div class="step-check" id="step2Check">⏸</div>
     </div>
-
-    <div class="upload-step" id="step3">
-      <div class="step-icon" id="step3Icon">☁️</div>
-      <div class="step-info">
-        <div class="step-label">Enviando arquivo</div>
-        <div class="step-detail" id="step3Detail">Aguardando PDF...</div>
-      </div>
-      <div class="step-check" id="step3Check">⏸</div>
-    </div>
-
-    <button class="upload-done-btn" id="uploadDoneBtn" onclick="closeSheet()" style="display:none">
-      ✅ &nbsp;Concluído
-    </button>
+    <button class="upload-done-btn" id="uploadDoneBtn" onclick="closeSheet()" style="display:none">✅ &nbsp;Concluído</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════ PROGRESS -->
+<!-- ══ PROGRESS ══ -->
 <div id="progOverlay">
   <div class="prog-wrap">
     <svg class="prog-svg" width="80" height="80" viewBox="0 0 80 80">
       <circle class="prog-bg" cx="40" cy="40" r="34" stroke-width="6"/>
-      <circle class="prog-fill" id="progFill" cx="40" cy="40" r="34" stroke-width="6"
-        stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+      <circle class="prog-fill" id="progFill" cx="40" cy="40" r="34" stroke-width="6" stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
     </svg>
     <div class="prog-pct" id="progPct">0%</div>
   </div>
   <div class="prog-lbl" id="progLbl">Gerando PDF...</div>
 </div>
-
 <div id="toast"></div>
 
 <script>
 const { jsPDF } = window.jspdf;
 
-// ── Config ──────────────────────────────────────────────────────────────────
-// IMPORTANTE: Substitua pelo seu Client ID do Google Cloud Console
-// Passos: console.cloud.google.com → Seu projeto → APIs → Credenciais → OAuth 2.0 Client ID
-// Authorized origins: adicione https://localhost:4443 e https://SEU-IP:4443
-const GOOGLE_CLIENT_ID = 'SEU_CLIENT_ID_AQUI.apps.googleusercontent.com';
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-const ROOT_FOLDER = 'ScanSUS'; // Pasta raiz no Drive
+// ── Config ────────────────────────────────────────────────────────────────────
+// Substitua pelo seu Client ID do Google Cloud Console.
+// Escopos necessários: drive.file + picker
+// Em "APIs ativadas": Drive API + Picker API
+// Em "Origens autorizadas": https://localhost:4443 e https://SEU-IP:4443
+const GOOGLE_CLIENT_ID  = 'SEU_CLIENT_ID_AQUI.apps.googleusercontent.com';
+const GOOGLE_API_KEY    = 'SUA_API_KEY_AQUI'; // necessária só para o Picker
+const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file';
 
-// ── State ────────────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────────
 let pages = [];
 let stream = null;
 let facingMode = 'environment';
@@ -721,267 +359,280 @@ let stableFrames = 0;
 let lastCapture = 0;
 const STABLE_TARGET = 22;
 const COOLDOWN = 3000;
-let prevScreen = 'sCamera';
 
 // Drive state
 let driveToken = null;
-let driveUser = null;
+let driveUser  = null;
 let tokenClient = null;
-let folderCache = {}; // path -> folderId
+let selectedFolder = null; // { id, name, path }
+let pickerApiLoaded = false;
 
-const video   = document.getElementById('video');
-const cvs     = document.getElementById('captureCanvas');
-const ctx     = cvs.getContext('2d');
-const ovCvs   = document.getElementById('overlayCanvas');
-const octx    = ovCvs.getContext('2d');
+const video  = document.getElementById('video');
+const cvs    = document.getElementById('captureCanvas');
+const ctx    = cvs.getContext('2d');
+const ovCvs  = document.getElementById('overlayCanvas');
+const octx   = ovCvs.getContext('2d');
 
-// ── Screens ──────────────────────────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+// ── Screens ───────────────────────────────────────────────────────────────────
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function startApp(){showScreen('sCamera');startCamera()}
+function goBack(){detecting=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}showScreen('sWelcome')}
+function goToPages(){renderPages();updateExportBtn();showScreen('sPages')}
+function goToCamera(){showScreen('sCamera');if(!stream)startCamera()}
+function closePreview(){showScreen('sPages')}
 
-function startApp() {
-  showScreen('sCamera');
-  startCamera();
-}
-
-function goBack() {
-  detecting = false;
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-  showScreen('sWelcome');
-}
-
-function goToPages() {
-  renderPages();
-  updateUploadPath();
-  showScreen('sPages');
-}
-
-function goToCamera() {
-  showScreen('sCamera');
-  if (!stream) startCamera();
-}
-
-function closePreview() { showScreen('sPages'); }
-
-// ── Google Identity Services ──────────────────────────────────────────────────
-function initGoogleAuth() {
-  if (!window.google || !google.accounts) {
-    setTimeout(initGoogleAuth, 500); return;
-  }
-  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) return;
-
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: DRIVE_SCOPE,
-    callback: handleTokenResponse,
+// ── Google Auth (GIS) ─────────────────────────────────────────────────────────
+function initGoogleAuth(){
+  if(!window.google||!google.accounts){setTimeout(initGoogleAuth,500);return}
+  if(!GOOGLE_CLIENT_ID||GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID'))return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:GOOGLE_CLIENT_ID,
+    scope:DRIVE_SCOPE,
+    callback:handleTokenResponse,
   });
 }
 
-function handleTokenResponse(resp) {
-  if (resp.error) { showToast('❌ Login cancelado', 'err'); return; }
-  driveToken = resp.access_token;
+function handleTokenResponse(resp){
+  if(resp.error){showToast('❌ Login cancelado','err');return}
+  driveToken=resp.access_token;
   fetchUserInfo();
+  loadPickerApi();
 }
 
-async function fetchUserInfo() {
-  try {
-    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: 'Bearer ' + driveToken }
-    });
-    const info = await r.json();
-    driveUser = info.name || info.email || 'Conectado';
+async function fetchUserInfo(){
+  try{
+    const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+driveToken}});
+    const info=await r.json();
+    driveUser=info.name||info.email||'Conectado';
     updateDriveCard(true);
-    folderCache = {};
-    showToast('✅ Drive conectado!', 'ok');
-    updateUploadPath();
-  } catch(e) {
-    driveUser = 'Conectado';
-    updateDriveCard(true);
-  }
+    showToast('✅ Drive conectado!','ok');
+    updateExportBtn();
+  }catch(e){driveUser='Conectado';updateDriveCard(true)}
 }
 
-function driveLogin() {
-  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) {
-    showToast('⚙️ Configure o Client ID no código', 'err');
-    return;
-  }
-  if (!tokenClient) { initGoogleAuth(); setTimeout(driveLogin, 800); return; }
-  tokenClient.requestAccessToken({ prompt: '' });
+function driveLogin(){
+  if(!GOOGLE_CLIENT_ID||GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')){showToast('⚙️ Configure o Client ID no código','err');return}
+  if(!tokenClient){initGoogleAuth();setTimeout(driveLogin,800);return}
+  tokenClient.requestAccessToken({prompt:''});
 }
 
-function driveLogout() {
-  if (driveToken) google.accounts.oauth2.revoke(driveToken, () => {});
-  driveToken = null; driveUser = null; folderCache = {};
-  updateDriveCard(false);
-  updateUploadPath();
+function driveLogout(){
+  if(driveToken)google.accounts.oauth2.revoke(driveToken,()=>{});
+  driveToken=null;driveUser=null;selectedFolder=null;
+  updateDriveCard(false);updateDestRow();updateExportBtn();
   showToast('Desconectado do Drive');
 }
 
-function updateDriveCard(connected) {
-  const card   = document.getElementById('driveCard');
-  const icon   = document.getElementById('driveCardIcon');
-  const value  = document.getElementById('driveCardValue');
-  const btn    = document.getElementById('driveCardBtn');
-  card.classList.toggle('connected', connected);
-  if (connected) {
-    icon.textContent = '✅';
-    value.textContent = driveUser;
-    value.classList.remove('dim');
-    btn.textContent = 'Sair';
-    btn.className = 'drive-card-action logout';
-    btn.onclick = driveLogout;
-  } else {
-    icon.textContent = '☁️';
-    value.textContent = 'Não conectado';
-    value.classList.add('dim');
-    btn.textContent = 'Conectar';
-    btn.className = 'drive-card-action login';
-    btn.onclick = driveLogin;
+function updateDriveCard(connected){
+  const card=document.getElementById('driveCard');
+  const icon=document.getElementById('driveCardIcon');
+  const val=document.getElementById('driveCardValue');
+  const btn=document.getElementById('driveCardBtn');
+  card.classList.toggle('connected',connected);
+  if(connected){icon.textContent='✅';val.textContent=driveUser;val.classList.remove('dim');btn.textContent='Sair';btn.className='drive-card-action logout';btn.onclick=driveLogout}
+  else{icon.textContent='☁️';val.textContent='Não conectado';val.classList.add('dim');btn.textContent='Conectar';btn.className='drive-card-action login';btn.onclick=driveLogin}
+}
+
+// ── Google Picker ─────────────────────────────────────────────────────────────
+function loadPickerApi(){
+  if(pickerApiLoaded)return;
+  if(!window.gapi){
+    const s=document.createElement('script');
+    s.src='https://apis.google.com/js/api.js';
+    s.onload=()=>gapi.load('picker',()=>{pickerApiLoaded=true});
+    document.head.appendChild(s);
+  }else{
+    gapi.load('picker',()=>{pickerApiLoaded=true});
   }
 }
 
-// ── Drive folder helpers ──────────────────────────────────────────────────────
-async function ensureFolder(name, parentId = 'root') {
-  const cacheKey = parentId + '/' + name;
-  if (folderCache[cacheKey]) return folderCache[cacheKey];
-
-  const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
-  const search = await driveRequest(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`);
-  const files = search.files || [];
-
-  if (files.length > 0) {
-    folderCache[cacheKey] = files[0].id;
-    return files[0].id;
+function openDrivePicker(){
+  if(!driveToken){showToast('⚠️ Conecte o Drive primeiro','err');return}
+  if(!GOOGLE_API_KEY||GOOGLE_API_KEY.includes('SUA_API_KEY')){
+    // Fallback: ask for folder name manually
+    const name=prompt('Nome da pasta de destino no Drive (será criada se não existir):');
+    if(!name)return;
+    selectedFolder={id:null,name:name.trim(),path:name.trim(),manualName:true};
+    updateDestRow();updateExportBtn();
+    return;
   }
+  if(!pickerApiLoaded){showToast('⏳ Aguarde, carregando seletor...','');setTimeout(openDrivePicker,1000);return}
+  const picker=new google.picker.PickerBuilder()
+    .addView(new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(true)
+      .setMimeTypes('application/vnd.google-apps.folder'))
+    .setOAuthToken(driveToken)
+    .setDeveloperKey(GOOGLE_API_KEY)
+    .setTitle('Escolha a pasta de destino')
+    .setCallback(pickerCallback)
+    .build();
+  picker.setVisible(true);
+}
 
-  const created = await driveRequest('https://www.googleapis.com/drive/v3/files', 'POST', {
-    name, mimeType: 'application/vnd.google-apps.folder',
-    parents: [parentId]
-  });
-  folderCache[cacheKey] = created.id;
+function pickerCallback(data){
+  if(data.action===google.picker.Action.PICKED){
+    const doc=data.docs[0];
+    selectedFolder={id:doc.id,name:doc.name,path:doc.name};
+    updateDestRow();updateExportBtn();
+    showToast('📁 Pasta selecionada: '+doc.name,'ok');
+  }
+}
+
+function updateDestRow(){
+  const pathEl=document.getElementById('destPath');
+  const subEl=document.getElementById('destSub');
+  const changeEl=document.getElementById('destChange');
+  const row=document.getElementById('destRow');
+  if(selectedFolder){
+    pathEl.textContent=selectedFolder.path;
+    pathEl.classList.remove('dim');
+    subEl.textContent=driveToken?'Clique para mudar':'Reconecte o Drive';
+    changeEl.textContent='Mudar';
+    row.classList.add('selected');
+  }else if(driveToken){
+    pathEl.textContent='Toque para escolher pasta no Drive';
+    pathEl.classList.add('dim');
+    subEl.textContent='Nenhuma pasta selecionada';
+    changeEl.textContent='Escolher';
+    row.classList.remove('selected');
+  }else{
+    pathEl.textContent='Conecte o Drive primeiro';
+    pathEl.classList.add('dim');
+    subEl.textContent='Toque em "Conectar" na tela inicial';
+    changeEl.textContent='';
+    row.classList.remove('selected');
+  }
+}
+
+function updateExportBtn(){
+  const btn=document.getElementById('btnExport');
+  const icon=document.getElementById('btnExportIcon');
+  const label=document.getElementById('btnExportLabel');
+  const hasPages=pages.length>0;
+  if(driveToken&&selectedFolder){
+    btn.disabled=!hasPages;
+    icon.textContent='⬆️';
+    label.textContent='Salvar PDF no Drive';
+  }else{
+    btn.disabled=!hasPages;
+    icon.textContent='⬇️';
+    label.textContent='Baixar PDF';
+  }
+}
+
+// ── Drive upload ──────────────────────────────────────────────────────────────
+async function driveRequest(url,method='GET',body=null){
+  const opts={method,headers:{Authorization:'Bearer '+driveToken}};
+  if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body)}
+  const r=await fetch(url,opts);
+  if(!r.ok)throw new Error('Drive API '+r.status+': '+await r.text());
+  return r.json();
+}
+
+async function resolveFolderId(){
+  if(selectedFolder.id)return selectedFolder.id;
+  // Manual name mode: find or create folder in root
+  const name=selectedFolder.name;
+  const q=`name='${name}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+  const res=await driveRequest('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)');
+  if(res.files&&res.files.length>0)return res.files[0].id;
+  const created=await driveRequest('https://www.googleapis.com/drive/v3/files','POST',{name,mimeType:'application/vnd.google-apps.folder',parents:['root']});
+  selectedFolder.id=created.id;
   return created.id;
 }
 
-async function driveRequest(url, method = 'GET', body = null) {
-  const opts = {
-    method,
-    headers: { Authorization: 'Bearer ' + driveToken }
-  };
-  if (body) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  }
-  const r = await fetch(url, opts);
-  if (!r.ok) throw new Error(`Drive API ${r.status}: ${await r.text()}`);
+async function uploadFileToDrive(blob,filename,folderId){
+  const meta={name:filename,parents:[folderId],mimeType:'application/pdf'};
+  const form=new FormData();
+  form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+  form.append('file',blob,filename);
+  const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{Authorization:'Bearer '+driveToken},body:form});
+  if(!r.ok)throw new Error('Upload failed '+r.status);
   return r.json();
 }
 
-async function uploadFileToDrive(blob, filename, folderId) {
-  const meta = { name: filename, parents: [folderId], mimeType: 'application/pdf' };
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
-  form.append('file', blob, filename);
-
-  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + driveToken },
-    body: form
-  });
-  if (!r.ok) throw new Error(`Upload failed ${r.status}`);
-  return r.json();
+// ── Export ────────────────────────────────────────────────────────────────────
+function buildFilename(){
+  const base=(document.getElementById('pdfName').value||'documento').trim().replace(/[^\w\s\-]/g,'').replace(/\s+/g,'_')||'documento';
+  const date=new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  return base+'_'+date+'.pdf';
 }
 
-// ── Upload path display ───────────────────────────────────────────────────────
-function updateUploadPath() {
-  const type    = document.getElementById('docType').value;
-  const patient = document.getElementById('patientName').value.trim();
-  const pathEl  = document.getElementById('uploadPathDisplay');
-  const statusEl = document.getElementById('uploadDriveStatus');
-  const btn     = document.getElementById('btnExport');
-  const btnIcon = document.getElementById('btnExportIcon');
-  const btnLabel = document.getElementById('btnExportLabel');
-
-  if (patient) {
-    pathEl.textContent = `ScanSUS / ${type} / ${patient}`;
-    pathEl.classList.remove('dim');
-  } else {
-    pathEl.textContent = 'Preencha o nome do paciente';
-    pathEl.classList.add('dim');
-  }
-
-  if (driveToken) {
-    statusEl.textContent = `☁️ Conectado como ${driveUser || '…'} — salva direto no Drive`;
-    btnIcon.textContent = '⬆️';
-    btnLabel.textContent = 'Salvar PDF no Drive';
-  } else {
-    statusEl.textContent = '💾 Sem Drive conectado — salva localmente';
-    btnIcon.textContent = '⬇️';
-    btnLabel.textContent = 'Baixar PDF';
-  }
-
-  btn.disabled = pages.length === 0 || !patient;
-}
-
-// ── Camera ────────────────────────────────────────────────────────────────────
-async function startCamera() {
-  document.getElementById('camBlocked').style.display = 'none';
-  setCamStatus('', 'Iniciando câmera...');
-
-  const attempts = [
-    { video: { facingMode: { ideal: facingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-    { video: { facingMode }, audio: false },
-    { video: true, audio: false }
-  ];
-
-  let ok = false;
-  for (const c of attempts) {
-    try { stream = await navigator.mediaDevices.getUserMedia(c); ok = true; break; }
-    catch(e) { console.warn('cam attempt', e.name); }
-  }
-
-  if (!ok) { showCamBlocked(); return; }
-
-  video.srcObject = stream;
-  try { await video.play(); } catch(e) {}
-  detecting = true;
-  setCamStatus('on', 'Pronto — aponte para um documento');
-  requestAnimationFrame(processFrame);
-  showToast('📷 Câmera ativa', 'ok');
-}
-
-function showCamBlocked(err) {
-  const el = document.getElementById('camBlocked');
-  el.style.display = 'flex';
-  if (!err) return;
-  const t = document.getElementById('blockedTitle');
-  const m = document.getElementById('blockedMsg');
-  if (err.name === 'NotAllowedError') {
-    t.textContent = '🚫 Permissão negada';
-    m.textContent = 'Permita o acesso à câmera nas configurações do navegador.';
-  } else if (location.protocol === 'file:') {
-    t.textContent = '⚠️ Protocolo incorreto';
-    m.textContent = 'Abra via HTTPS usando o servidor.py incluído.';
-  } else {
-    t.textContent = '❌ Erro na câmera';
-    m.textContent = err.message || 'Erro desconhecido.';
+async function doExport(){
+  if(!driveToken||!selectedFolder){exportLocal();return}
+  const filename=buildFilename();
+  showSheet(true);
+  try{
+    // Step 1: build PDF
+    setStep(1,'active','⏳','Processando '+pages.length+' página(s)...');
+    showProg(true);
+    const pdf=await buildPDF();
+    const blob=pdf.output('blob');
+    showProg(false);
+    setStep(1,'done','✅',filename);
+    // Step 2: upload
+    setStep(2,'active','⏳','Enviando '+(blob.size/1024).toFixed(0)+' KB para "'+selectedFolder.name+'"...');
+    const folderId=await resolveFolderId();
+    const result=await uploadFileToDrive(blob,filename,folderId);
+    setStep(2,'done','✅','Salvo em: '+selectedFolder.path);
+    document.getElementById('sheetTitle').textContent='✅ Salvo no Drive!';
+    document.getElementById('sheetSub').textContent=selectedFolder.path+' / '+filename;
+    document.getElementById('uploadDoneBtn').style.display='block';
+    showToast('☁️ PDF salvo no Drive!','ok');
+  }catch(e){
+    showProg(false);
+    if(e.message&&e.message.includes('401')){driveToken=null;updateDriveCard(false);showToast('⚠️ Sessão expirada — reconecte','err')}
+    else showToast('❌ Erro: '+(e.message||''),'err');
+    setStep(2,'err','❌',e.message||'Falha no envio');
+    document.getElementById('uploadDoneBtn').style.display='block';
+    document.getElementById('uploadDoneBtn').textContent='✕ Fechar';
   }
 }
 
-async function retryCamera() {
-  document.getElementById('camBlocked').style.display = 'none';
-  await startCamera();
+async function exportLocal(){
+  showProg(true);
+  try{const pdf=await buildPDF();pdf.save(buildFilename());showToast('⬇️ PDF baixado!','ok')}
+  catch(e){showToast('❌ Erro ao gerar PDF','err')}
+  showProg(false);
 }
 
-async function switchCamera() {
-  facingMode = facingMode === 'environment' ? 'user' : 'environment';
-  detecting = false;
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-  prevGray = null; stableFrames = 0;
-  await startCamera();
+async function buildPDF(){
+  const sorted=[...pages].sort((a,b)=>a.id-b.id);
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+  for(let i=0;i<sorted.length;i++){
+    setProg((i+1)/sorted.length,'Pág. '+(i+1)+'/'+sorted.length);
+    if(i>0)pdf.addPage();
+    await new Promise(res=>{const img=new Image();img.onload=()=>{const ir=img.width/img.height,pr=pw/ph;let iw,ih,ix,iy;if(ir>pr){iw=pw;ih=pw/ir;ix=0;iy=(ph-ih)/2}else{ih=ph;iw=ph*ir;ix=(pw-iw)/2;iy=0}pdf.addImage(sorted[i].dataURL,'JPEG',ix,iy,iw,ih,'','FAST');res()};img.src=sorted[i].dataURL});
+    await new Promise(r=>setTimeout(r,25));
+  }
+  return pdf;
 }
 
+// ── Upload sheet ──────────────────────────────────────────────────────────────
+function showSheet(show){
+  const el=document.getElementById('uploadSheet');el.classList.toggle('show',show);
+  if(show){
+    setStep(1,'','⏸','Aguardando...');setStep(2,'','⏸','Aguardando...');
+    document.getElementById('uploadDoneBtn').style.display='none';
+    document.getElementById('sheetTitle').textContent='Enviando para o Drive';
+    document.getElementById('sheetSub').textContent='Aguarde...';
+  }
+}
+function closeSheet(){document.getElementById('uploadSheet').classList.remove('show')}
+function setStep(n,state,icon,detail){
+  document.getElementById('step'+n+'Icon').className='step-icon'+(state?' '+state:'');
+  document.getElementById('step'+n+'Check').textContent=icon;
+  document.getElementById('step'+n+'Detail').textContent=detail;
+}
+
+// ── Progress ──────────────────────────────────────────────────────────────────
+function showProg(show){document.getElementById('progOverlay').classList.toggle('show',show)}
+function setProg(p,lbl){document.getElementById('progFill').style.strokeDashoffset=213.6*(1-p);document.getElementById('progPct').textContent=Math.round(p*100)+'%';document.getElementById('progLbl').textContent=lbl}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
 function setCamStatus(type, text) {
   document.getElementById('camStatusTxt').textContent = text;
   const d = document.getElementById('camDot');
@@ -1059,147 +710,220 @@ function processFrame() {
 }
 
 // ── Document corner detection (pure JS, no OpenCV) ────────────────────────────
+// ── Document detection — brightness-based (finds the white paper) ─────────────
+//
+// Strategy:
+//  1. Downscale frame for speed
+//  2. For each pixel compute luminance
+//  3. Threshold to create a binary "bright mask" (paper = bright, background = dark)
+//  4. Erode mask to remove noise
+//  5. Find the largest connected bright region (the document)
+//  6. Compute its axis-aligned bounding box → 4 corners
+//  7. Refine each edge by scanning inward from that bbox for the sharpest
+//     brightness transition → sub-pixel accurate edge lines
+//
+// Works well when document is lighter than background (typical scan scenario).
+// Falls back gracefully when no bright rectangle is found.
+
 function findDocumentCorners(vw, vh) {
   const dw = Math.round(vw * DET_SCALE);
   const dh = Math.round(vh * DET_SCALE);
   detCvs.width = dw; detCvs.height = dh;
   detCtx.drawImage(video, 0, 0, dw, dh);
   const imgData = detCtx.getImageData(0, 0, dw, dh);
-  const gray = toGrayscale(imgData.data, dw, dh);
-  const blurred = gaussianBlur(gray, dw, dh);
-  const edges = sobelEdge(blurred, dw, dh);
-  const rawCorners = houghRectangle(edges, dw, dh);
-  if (!rawCorners) { lastCorners = null; return null; }
-  // Store VIDEO-space corners for perspectiveCrop
+
+  // 1. Build luminance map
+  const lum = new Uint8Array(dw * dh);
+  const d = imgData.data;
+  for (let i = 0; i < lum.length; i++)
+    lum[i] = (d[i*4]*.299 + d[i*4+1]*.587 + d[i*4+2]*.114) | 0;
+
+  // 2. Auto-threshold: pixels above (mean + k*std) are "bright"
+  let sum = 0;
+  for (let i = 0; i < lum.length; i++) sum += lum[i];
+  const mean = sum / lum.length;
+  let variance = 0;
+  for (let i = 0; i < lum.length; i++) variance += (lum[i]-mean)**2;
+  const std = Math.sqrt(variance / lum.length);
+  // Document paper is typically well above average; tune k here (1.0–1.8)
+  const BRIGHT_THRESH = Math.min(200, mean + std * 1.1);
+
+  // 3. Binary bright mask
+  const mask = new Uint8Array(dw * dh);
+  for (let i = 0; i < lum.length; i++)
+    mask[i] = lum[i] >= BRIGHT_THRESH ? 1 : 0;
+
+  // 4. Erode 2px to remove isolated noise
+  const eroded = erodeMask(mask, dw, dh, 2);
+
+  // 5. Find bounding box of the largest bright blob via scanline
+  const bbox = brightBBox(eroded, dw, dh);
+  if (!bbox) { lastCorners = null; lastOverlayCorners = null; return null; }
+
+  const { x0, y0, x1, y1 } = bbox;
+
+  // Reject if too small (< 25% of frame in each axis)
+  if ((x1-x0) < dw*0.25 || (y1-y0) < dh*0.25) {
+    lastCorners = null; lastOverlayCorners = null; return null;
+  }
+
+  // 6. Refine each edge: scan from bbox boundary inward, find steepest lum drop
+  const TOP    = refineEdge(lum, dw, dh, 'top',    y0, x0, x1);
+  const BOTTOM = refineEdge(lum, dw, dh, 'bottom', y1, x0, x1);
+  const LEFT   = refineEdge(lum, dw, dh, 'left',   x0, y0, y1);
+  const RIGHT  = refineEdge(lum, dw, dh, 'right',  x1, y0, y1);
+
+  // Raw corners in detection-canvas space: TL, TR, BR, BL
+  const rawCorners = [
+    [LEFT,  TOP],
+    [RIGHT, TOP],
+    [RIGHT, BOTTOM],
+    [LEFT,  BOTTOM],
+  ];
+
+  // 7. Store VIDEO-space corners for crop
   const vidSx = vw / dw, vidSy = vh / dh;
   lastCorners = rawCorners.map(([x, y]) => [x * vidSx, y * vidSy]);
+
   // Return OVERLAY-space corners for drawing
   const ovSx = ovCvs.width / dw, ovSy = ovCvs.height / dh;
-  return rawCorners.map(([x, y]) => [x * ovSx, y * ovSy]);
+  lastOverlayCorners = rawCorners.map(([x, y]) => [x * ovSx, y * ovSy]);
+  return lastOverlayCorners;
 }
 
+// Erode binary mask by `r` pixels (removes thin noise at edges)
+function erodeMask(mask, w, h, r) {
+  const out = new Uint8Array(w * h);
+  for (let y = r; y < h-r; y++) {
+    for (let x = r; x < w-r; x++) {
+      let ok = 1;
+      outer: for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (!mask[(y+dy)*w+(x+dx)]) { ok = 0; break outer; }
+        }
+      }
+      out[y*w+x] = ok;
+    }
+  }
+  return out;
+}
+
+// Find bounding box of the largest contiguous bright region
+// Uses a fast scanline approach: finds the densest bright band per row/col
+function brightBBox(mask, w, h) {
+  // Row density: how many bright pixels in each row
+  const rowDen = new Float32Array(h);
+  const colDen = new Float32Array(w);
+  let total = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (mask[y*w+x]) { rowDen[y]++; colDen[x]++; total++; }
+    }
+  }
+  if (total < w*h*0.04) return null; // less than 4% bright → no doc
+
+  // Find the contiguous row band with highest average density
+  const MIN_RUN = Math.round(h * 0.2);
+  const y0 = findDenseEdge(rowDen, h, 'start', MIN_RUN);
+  const y1 = findDenseEdge(rowDen, h, 'end',   MIN_RUN);
+  const x0 = findDenseEdge(colDen, w, 'start', Math.round(w*0.2));
+  const x1 = findDenseEdge(colDen, w, 'end',   Math.round(w*0.2));
+
+  if (x0 < 0 || y0 < 0 || x1 <= x0 || y1 <= y0) return null;
+  return { x0, y0, x1, y1 };
+}
+
+// Find the first (start) or last (end) position where density is above threshold
+function findDenseEdge(den, len, dir, minRun) {
+  const MARGIN = Math.round(len * 0.04);
+  // Smooth density
+  const sm = new Float32Array(len);
+  const R = 4;
+  for (let i = 0; i < len; i++) {
+    let s = 0, c = 0;
+    for (let k = -R; k <= R; k++) {
+      const j = i+k;
+      if (j >= 0 && j < len) { s += den[j]; c++; }
+    }
+    sm[i] = s/c;
+  }
+  // Global max to compute relative threshold
+  let maxVal = 0;
+  for (let i = MARGIN; i < len-MARGIN; i++) if (sm[i] > maxVal) maxVal = sm[i];
+  if (maxVal < 1) return -1;
+  const thresh = maxVal * 0.35; // edge = where density drops below 35% of peak
+
+  if (dir === 'start') {
+    for (let i = MARGIN; i < len-MARGIN; i++)
+      if (sm[i] >= thresh) return i;
+  } else {
+    for (let i = len-MARGIN-1; i >= MARGIN; i--)
+      if (sm[i] >= thresh) return i;
+  }
+  return -1;
+}
+
+// Refine a single edge by finding the steepest luminance gradient
+// along the perpendicular direction from the rough bbox boundary
+function refineEdge(lum, w, h, edge, roughPos, rangeStart, rangeEnd) {
+  const SCAN = 18; // pixels to scan inward from rough position
+  const STEP = 4;  // sample every N pixels along the edge for speed
+
+  let bestPos = roughPos;
+  let bestGrad = -1;
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  if (edge === 'top') {
+    const scanEnd = clamp(roughPos + SCAN, 0, h-2);
+    for (let y = clamp(roughPos - SCAN, 1, h-2); y < scanEnd; y++) {
+      let grad = 0; let count = 0;
+      for (let x = rangeStart; x < rangeEnd; x += STEP) {
+        grad += Math.abs(lum[y*w+x] - lum[(y-1)*w+x]);
+        count++;
+      }
+      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = y; }
+    }
+  } else if (edge === 'bottom') {
+    const scanStart = clamp(roughPos - SCAN, 1, h-2);
+    for (let y = clamp(roughPos + SCAN, 1, h-2); y >= scanStart; y--) {
+      let grad = 0; let count = 0;
+      for (let x = rangeStart; x < rangeEnd; x += STEP) {
+        grad += Math.abs(lum[y*w+x] - lum[(y+1)*w+x]);
+        count++;
+      }
+      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = y; }
+    }
+  } else if (edge === 'left') {
+    const scanEnd = clamp(roughPos + SCAN, 0, w-2);
+    for (let x = clamp(roughPos - SCAN, 1, w-2); x < scanEnd; x++) {
+      let grad = 0; let count = 0;
+      for (let y = rangeStart; y < rangeEnd; y += STEP) {
+        grad += Math.abs(lum[y*w+x] - lum[y*w+(x-1)]);
+        count++;
+      }
+      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = x; }
+    }
+  } else { // right
+    const scanStart = clamp(roughPos - SCAN, 1, w-2);
+    for (let x = clamp(roughPos + SCAN, 1, w-2); x >= scanStart; x--) {
+      let grad = 0; let count = 0;
+      for (let y = rangeStart; y < rangeEnd; y += STEP) {
+        grad += Math.abs(lum[y*w+x] - lum[y*w+(x+1)]);
+        count++;
+      }
+      if (count > 0 && grad/count > bestGrad) { bestGrad = grad/count; bestPos = x; }
+    }
+  }
+  return bestPos;
+}
+
+// (toGrayscale kept for motion detection compatibility)
 function toGrayscale(data, w, h) {
   const g = new Uint8Array(w * h);
   for (let i = 0; i < g.length; i++)
     g[i] = (data[i*4]*.299 + data[i*4+1]*.587 + data[i*4+2]*.114)|0;
   return g;
-}
-
-function gaussianBlur(g, w, h) {
-  // 1D separable 5-tap Gaussian [1,4,6,4,1]/16
-  const k = [1,4,6,4,1], ksum = 16;
-  const tmp = new Uint8Array(w * h);
-  const out = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let s = 0;
-      for (let ki = -2; ki <= 2; ki++) {
-        const xi = Math.max(0, Math.min(w-1, x+ki));
-        s += g[y*w+xi] * k[ki+2];
-      }
-      tmp[y*w+x] = s / ksum;
-    }
-  }
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let s = 0;
-      for (let ki = -2; ki <= 2; ki++) {
-        const yi = Math.max(0, Math.min(h-1, y+ki));
-        s += tmp[yi*w+x] * k[ki+2];
-      }
-      out[y*w+x] = s / ksum;
-    }
-  }
-  return out;
-}
-
-function sobelEdge(g, w, h) {
-  const out = new Uint8Array(w * h);
-  for (let y = 1; y < h-1; y++) {
-    for (let x = 1; x < w-1; x++) {
-      const tl=g[(y-1)*w+(x-1)], tc=g[(y-1)*w+x], tr=g[(y-1)*w+(x+1)];
-      const ml=g[y*w+(x-1)],                        mr=g[y*w+(x+1)];
-      const bl=g[(y+1)*w+(x-1)], bc=g[(y+1)*w+x], br=g[(y+1)*w+(x+1)];
-      const gx = -tl - 2*ml - bl + tr + 2*mr + br;
-      const gy = -tl - 2*tc - tr + bl + 2*bc + br;
-      out[y*w+x] = Math.min(255, Math.sqrt(gx*gx + gy*gy)|0);
-    }
-  }
-  return out;
-}
-
-// Simplified Hough-like rectangle finder:
-// Projects edge pixels onto horizontal/vertical axes,
-// finds the 4 strongest peaks → estimates rectangle corners
-function houghRectangle(edges, w, h) {
-  const THRESH = 40;
-  const MARGIN = Math.round(w * 0.08); // ignore near-border noise
-
-  // Accumulate edge density per column and row (in the center band)
-  const colAcc = new Float32Array(w);
-  const rowAcc = new Float32Array(h);
-
-  for (let y = MARGIN; y < h - MARGIN; y++) {
-    for (let x = MARGIN; x < w - MARGIN; x++) {
-      const v = edges[y*w+x];
-      if (v > THRESH) { colAcc[x] += v; rowAcc[y] += v; }
-    }
-  }
-
-  // Smooth accumulators
-  const sc = smoothAcc(colAcc, w, 5);
-  const sr = smoothAcc(rowAcc, h, 5);
-
-  // Find leftmost/rightmost strong column peaks
-  const totalEdge = sc.reduce((a,b) => a+b, 0);
-  if (totalEdge < 200) return null; // not enough edges → no document
-
-  const colPeaks = findTwoPeaks(sc, w, MARGIN);
-  const rowPeaks = findTwoPeaks(sr, h, MARGIN);
-  if (!colPeaks || !rowPeaks) return null;
-
-  const [x0, x1] = colPeaks;
-  const [y0, y1] = rowPeaks;
-
-  // Reject if rectangle is too small (< 30% of frame)
-  if ((x1-x0) < w*0.28 || (y1-y0) < h*0.28) return null;
-
-  // Return TL, TR, BR, BL
-  return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
-}
-
-function smoothAcc(arr, len, r) {
-  const out = new Float32Array(len);
-  for (let i = 0; i < len; i++) {
-    let s = 0, c = 0;
-    for (let k = -r; k <= r; k++) {
-      const j = i+k;
-      if (j >= 0 && j < len) { s += arr[j]; c++; }
-    }
-    out[i] = s / c;
-  }
-  return out;
-}
-
-function findTwoPeaks(acc, len, margin) {
-  // Find highest peak, then highest peak on the opposite side
-  let max1 = 0, idx1 = -1;
-  for (let i = margin; i < len-margin; i++) {
-    if (acc[i] > max1) { max1 = acc[i]; idx1 = i; }
-  }
-  if (idx1 < 0 || max1 < 1) return null;
-
-  // Second peak must be on the other half
-  const mid = len / 2;
-  let max2 = 0, idx2 = -1;
-  const searchStart = idx1 < mid ? Math.round(mid) : margin;
-  const searchEnd   = idx1 < mid ? len-margin : Math.round(mid);
-  for (let i = searchStart; i < searchEnd; i++) {
-    if (acc[i] > max2) { max2 = acc[i]; idx2 = i; }
-  }
-  if (idx2 < 0) return null;
-
-  return idx1 < idx2 ? [idx1, idx2] : [idx2, idx1];
 }
 
 // ── Motion detection ──────────────────────────────────────────────────────────
@@ -1561,102 +1285,6 @@ function openPreview(id) {
   const p = pages.find(x => x.id === id); if (!p) return;
   document.getElementById('previewImg').src = p.dataURL;
   showScreen('sPreview');
-}
-
-// ── PDF builder ───────────────────────────────────────────────────────────────
-async function buildPDF() {
-  const sorted = [...pages].sort((a,b) => a.id - b.id);
-  const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-  const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
-  for (let i = 0; i < sorted.length; i++) {
-    setProg((i+1)/sorted.length, `Pág. ${i+1}/${sorted.length}`);
-    if (i > 0) pdf.addPage();
-    await new Promise(res => {
-      const img = new Image();
-      img.onload = () => {
-        const ir = img.width/img.height, pr = pw/ph;
-        let iw,ih,ix,iy;
-        if (ir > pr) { iw=pw; ih=pw/ir; ix=0; iy=(ph-ih)/2; }
-        else { ih=ph; iw=ph*ir; ix=(pw-iw)/2; iy=0; }
-        pdf.addImage(sorted[i].dataURL,'JPEG',ix,iy,iw,ih,'','FAST'); res();
-      };
-      img.src = sorted[i].dataURL;
-    });
-    await new Promise(r => setTimeout(r, 25));
-  }
-  return pdf;
-}
-
-function buildFilename() {
-  const patient = document.getElementById('patientName').value.trim();
-  const type    = document.getElementById('docType').value;
-  const date    = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
-  return `${type}_${patient.replace(/\s+/g,'_')}_${date}.pdf`;
-}
-
-// ── Export ────────────────────────────────────────────────────────────────────
-async function doExport() {
-  if (!driveToken) { exportLocal(); return; }
-  const patient = document.getElementById('patientName').value.trim();
-  if (!patient) { showToast('⚠️ Preencha o nome do paciente', 'err'); return; }
-
-  showSheet(true);
-  const filename = buildFilename();
-  const type = document.getElementById('docType').value;
-
-  try {
-    // Step 1: Build PDF
-    setStep(1, 'active', '⏳', `Processando ${pages.length} página${pages.length>1?'s':''}...`);
-    showProg(true);
-    const pdf = await buildPDF();
-    const blob = pdf.output('blob');
-    showProg(false);
-    setStep(1, 'done', '✅', filename);
-
-    // Step 2: Ensure folders ScanSUS / Tipo / Paciente
-    setStep(2, 'active', '⏳', `Verificando ScanSUS/${type}/${patient}...`);
-    const rootId    = await ensureFolder(ROOT_FOLDER, 'root');
-    const typeId    = await ensureFolder(type, rootId);
-    const patientId = await ensureFolder(patient, typeId);
-    setStep(2, 'done', '✅', `Drive: ScanSUS/${type}/${patient}/`);
-
-    // Step 3: Upload
-    setStep(3, 'active', '⏳', `Enviando ${(blob.size/1024).toFixed(0)} KB...`);
-    const result = await uploadFileToDrive(blob, filename, patientId);
-    setStep(3, 'done', '✅', `Salvo: ${result.name}`);
-
-    document.getElementById('sheetTitle').textContent = 'Arquivo salvo no Drive ✅';
-    document.getElementById('sheetSub').textContent   = `ScanSUS / ${type} / ${patient}`;
-    document.getElementById('uploadDoneBtn').style.display = 'block';
-    showToast('☁️ PDF salvo no Drive!', 'ok');
-
-  } catch(e) {
-    showProg(false);
-    console.error(e);
-    if (e.message && e.message.includes('401')) {
-      driveToken = null; updateDriveCard(false);
-      showToast('⚠️ Sessão expirada — reconecte', 'err');
-    } else {
-      showToast('❌ Erro no upload: ' + (e.message||''), 'err');
-    }
-    setStep(3, 'err', '❌', e.message || 'Falha no envio');
-    document.getElementById('uploadDoneBtn').style.display = 'block';
-    document.getElementById('uploadDoneBtn').textContent = '✕ Fechar';
-  }
-}
-
-async function exportLocal() {
-  const patient = document.getElementById('patientName').value.trim() || 'documentos';
-  showProg(true);
-  try {
-    const pdf = await buildPDF();
-    pdf.save(buildFilename());
-    showToast('⬇️ PDF baixado!', 'ok');
-  } catch(e) {
-    showToast('❌ Erro ao gerar PDF', 'err');
-  }
-  showProg(false);
-}
 
 // ── Upload sheet ──────────────────────────────────────────────────────────────
 function showSheet(show) {
@@ -1700,25 +1328,89 @@ function showToast(msg, type='') {
   toastTimer = setTimeout(() => t.className='', 2600);
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-if (location.protocol === 'file:' || !navigator.mediaDevices?.getUserMedia) {
-  document.getElementById('httpsWarn').style.display = 'block';
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+async function startCamera(){
+  document.getElementById('camBlocked').style.display='none';
+  setCamStatus('','Iniciando câmera...');
+  const attempts=[
+    {video:{facingMode:{ideal:facingMode},width:{ideal:1920},height:{ideal:1080}},audio:false},
+    {video:{facingMode},audio:false},
+    {video:true,audio:false}
+  ];
+  let ok=false;
+  for(const c of attempts){try{stream=await navigator.mediaDevices.getUserMedia(c);ok=true;break}catch(e){}}
+  if(!ok){showCamBlocked();return}
+  video.srcObject=stream;
+  try{await video.play()}catch(e){}
+  detecting=true;
+  setCamStatus('on','Pronto — aponte para um documento');
+  requestAnimationFrame(processFrame);
+  showToast('📷 Câmera ativa','ok');
 }
 
-// Load Google Identity Services
-(function loadGIS() {
-  if (GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) {
-    const s = document.createElement('script');
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = initGoogleAuth;
-    document.head.appendChild(s);
-  }
-})();
+function showCamBlocked(err){
+  const el=document.getElementById('camBlocked');el.style.display='flex';
+  if(!err)return;
+  const t=document.getElementById('blockedTitle'),m=document.getElementById('blockedMsg');
+  if(err.name==='NotAllowedError'){t.textContent='🚫 Permissão negada';m.textContent='Permita o acesso à câmera nas configurações do navegador.'}
+  else if(location.protocol==='file:'){t.textContent='⚠️ Protocolo incorreto';m.textContent='Abra via HTTPS usando o servidor.py incluído.'}
+  else{t.textContent='❌ Erro na câmera';m.textContent=err.message||'Erro desconhecido.'}
+}
+async function retryCamera(){document.getElementById('camBlocked').style.display='none';await startCamera()}
+async function switchCamera(){facingMode=facingMode==='environment'?'user':'environment';detecting=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}prevGray=null;stableFrames=0;await startCamera()}
+function setCamStatus(type,text){document.getElementById('camStatusTxt').textContent=text;const d=document.getElementById('camDot');d.className='cam-dot'+(type?' '+type:'')}
 
-// Show config notice if client ID not set
-if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')) {
-  const el = document.getElementById('driveCardValue');
-  el.textContent = 'Client ID não configurado';
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function updateGallery(){
+  const thumb=document.getElementById('galleryThumb'),empty=document.getElementById('galleryEmpty'),count=document.getElementById('galleryCount');
+  if(pages.length>0){thumb.src=pages[pages.length-1].dataURL;thumb.style.display='block';empty.style.display='none';count.style.display='block';count.textContent=pages.length}
+  else{thumb.style.display='none';empty.style.display='flex';count.style.display='none'}
+}
+function updatePageCounter(){document.getElementById('pageCounter').textContent=pages.length+' pág.'}
+function setCapMode(m){
+  capMode=m;
+  document.getElementById('pillAuto').classList.toggle('active',m==='auto');
+  document.getElementById('pillManual').classList.toggle('active',m==='manual');
+  document.getElementById('autoBar').style.display=m==='auto'?'block':'none';
+  stableFrames=0;document.getElementById('autoFill').style.width='0%';
+  document.getElementById('shutterOuter').classList.remove('armed');
+  document.getElementById('shutterLabel').textContent=m==='auto'?'AUTO':'CAPTURAR';
+}
+function toggleBW(){bwMode=!bwMode;document.getElementById('pillBW').classList.toggle('active',bwMode);showToast(bwMode?'⚫ P&B ativado':'🎨 Colorido','ok')}
+
+// ── Pages render ──────────────────────────────────────────────────────────────
+function renderPages(){
+  const grid=document.getElementById('pagesGrid');
+  document.getElementById('pagesTitle').textContent='Capturas ('+pages.length+')';
+  if(pages.length===0){grid.innerHTML='<div class="pages-empty"><div class="pages-empty-icon">📂</div><div>Nenhuma captura ainda.<br>Use a câmera para digitalizar.</div></div>';return}
+  grid.innerHTML='';
+  pages.forEach((p,i)=>{
+    const card=document.createElement('div');card.className='page-card';
+    card.innerHTML='<img src="'+p.dataURL+'" onclick="openPreview('+p.id+')"><div class="page-num">'+(i+1)+'</div><div class="page-del" onclick="deletePage('+p.id+')">✕</div>'+(p.bw?'<div class="bw-tag">P&B</div>':'');
+    grid.appendChild(card);
+  });
+}
+function deletePage(id){pages=pages.filter(p=>p.id!==id);updateGallery();updatePageCounter();renderPages();updateExportBtn();showToast('Página removida')}
+function clearAllPages(){if(!pages.length)return;if(!confirm('Remover todas as '+pages.length+' páginas?'))return;pages=[];updateGallery();updatePageCounter();renderPages();updateExportBtn()}
+function openPreview(id){const p=pages.find(x=>x.id===id);if(!p)return;document.getElementById('previewImg').src=p.dataURL;showScreen('sPreview')}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+if(location.protocol==='file:'||!navigator.mediaDevices?.getUserMedia){
+  document.getElementById('httpsWarn').style.display='block';
+}
+updateDestRow();
+updateExportBtn();
+
+if(GOOGLE_CLIENT_ID&&!GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')){
+  const s=document.createElement('script');
+  s.src='https://accounts.google.com/gsi/client';
+  s.onload=initGoogleAuth;
+  document.head.appendChild(s);
+  loadPickerApi();
+}
+if(!GOOGLE_CLIENT_ID||GOOGLE_CLIENT_ID.includes('SEU_CLIENT_ID')){
+  document.getElementById('driveCardValue').textContent='Client ID não configurado';
 }
 </script>
 </body>
